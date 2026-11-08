@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 
+from quant.data.sessions import EXCHANGE_TZ
 from quant.strategies.base import Family, register
 from quant.strategies.indicators import atr, ema, hold_until, prior_high, prior_low, rsi
 
@@ -123,4 +125,95 @@ def volatility_breakout(bars: pd.DataFrame, squeeze: int, k: float) -> pd.Series
         exit_long=close < anchor,
         enter_short=compressed.shift(1, fill_value=False) & (close < anchor - k * width),
         exit_short=close > anchor,
+    )
+
+
+def _bar_spacing(index: pd.DatetimeIndex) -> tuple[pd.Series, pd.Series]:
+    steps = index.to_series().diff().dt.total_seconds() / 3600
+    return steps, steps.cummin()
+
+
+def _reopen_bars(index: pd.DatetimeIndex) -> pd.Series:
+    steps, spacing = _bar_spacing(index)
+    return (steps > spacing * 1.5).fillna(False).astype(bool)
+
+
+def _bars_for_hours(index: pd.DatetimeIndex, hours: float) -> pd.Series:
+    _, spacing = _bar_spacing(index)
+    return (hours / spacing).apply(np.ceil)
+
+
+def _bars_since(events: pd.Series) -> pd.Series:
+    group = events.astype(int).cumsum()
+    return events.groupby(group).cumcount().astype(float)
+
+
+def _time_of_day(index: pd.DatetimeIndex) -> np.ndarray:
+    local = index.tz_convert(EXCHANGE_TZ)
+    return np.asarray(local.hour * 60 + local.minute)
+
+
+@register(
+    Family.MEAN_REVERSION,
+    "OKX stock and commodity perps keep trading through the weekend and daily break while "
+    "the underlying is shut, so crypto-native traders set the price with no hedgeable "
+    "reference; the reopen print overshoots and market makers who can hedge again pull it "
+    "back, and the edge persists because harvesting it means carrying closed-market gap risk.",
+    z=(0.25, 0.5),
+    hold_hours=(8.0, 24.0),
+)
+def reopen_gap_fade(bars: pd.DataFrame, z: float, hold_hours: float) -> pd.Series:
+    index = pd.DatetimeIndex(bars.index)
+    close = bars["close"]
+    reopen = _reopen_bars(index)
+    step = np.log(close).diff().where(~reopen)
+    _, spacing = _bar_spacing(index)
+    per_day = (24 / spacing) ** 0.5
+    daily_sigma = step.rolling(100, min_periods=50).std().shift(1) * per_day
+    pre_close = close.shift(1).where(reopen).ffill()
+    gap = np.log(bars["open"] / close.shift(1)) / daily_sigma
+    since = _bars_since(reopen)
+    timed_out = since >= _bars_for_hours(index, hold_hours)
+    return hold_until(
+        enter_long=reopen & (gap < -z) & (close < pre_close),
+        exit_long=reopen | timed_out | (close >= pre_close),
+        enter_short=reopen & (gap > z) & (close > pre_close),
+        exit_short=reopen | timed_out | (close <= pre_close),
+    )
+
+
+@register(
+    Family.MEAN_REVERSION,
+    "A bar whose move and volume are both abnormal for that time of day on a leveraged perp "
+    "is usually a liquidation or stop cascade, not news: forced sellers pay for immediacy "
+    "and the price partially retraces once the cascade ends, while capital that absorbs "
+    "cascades stays scarce because it must sit through the move against it.",
+    k=(3.0, 4.0),
+    hold_hours=(6.0, 24.0),
+)
+def volume_shock_reversal(bars: pd.DataFrame, k: float, hold_hours: float) -> pd.Series:
+    index = pd.DatetimeIndex(bars.index)
+    close = bars["close"]
+    reopen = _reopen_bars(index)
+    step = np.log(close).diff().where(~reopen)
+    slot = _time_of_day(index)
+    usual_move = step.groupby(slot).transform(
+        lambda s: s.rolling(20, min_periods=10).std().shift(1)
+    )
+    usual_volume = (
+        bars["volume"]
+        .groupby(slot)
+        .transform(lambda s: s.rolling(20, min_periods=10).median().shift(1))
+    )
+    busy = bars["volume"] > 3 * usual_volume
+    shock_up = busy & (step > k * usual_move)
+    shock_down = busy & (step < -k * usual_move)
+    shock = shock_up | shock_down
+    anchor = bars["open"].where(shock).ffill()
+    timed_out = _bars_since(shock) >= _bars_for_hours(index, hold_hours)
+    return hold_until(
+        enter_long=shock_down,
+        exit_long=shock_up | reopen | timed_out | (close >= anchor),
+        enter_short=shock_up,
+        exit_short=shock_down | reopen | timed_out | (close <= anchor),
     )

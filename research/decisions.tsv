@@ -21,3 +21,5 @@ date	run_id	candidate	verdict	evidence	decided_by
 2026-11-08	20261108-145511	lesson: split sensitivity	ENCODED	gate split_robust (reselect at IS 50%/70%, OOS > 0), tests/test_gates.py	arbiter
 2026-11-08	20261108-150559	round 2 with real costs and 10 gates	NONE ACCEPTED	532 candidates, 0 accept, 0 watch; ledger OOS trials 550	arbiter
 2026-11-08	20261108-151544-pooled	pooled baseline: 4 pools x 4 tf x 7 strategies	NONE ACCEPTED	112 candidates, 0 accept/watch; best donchian energy 4h OOS 3.13, DSR 0.05	arbiter
+2026-11-08	20261108-152254 / 20261108-152323-pooled	duel r1: reopen_gap_fade, volume_shock_reversal	NONE ACCEPTED	single 152 + pooled 32 candidates, 0 accept/watch; best pooled gap fade equities 4h OOS 0.86	arbiter
+2026-11-08	duel r1	lesson: causality test used gapless constant-volume data	ENCODED	added session dataset with gaps and lognormal volume, plus non-vacuity test that every strategy trades on it	arbiter
