@@ -1,0 +1,59 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+import pandas as pd
+
+from quant.types import AssetClass, InstId
+
+
+@dataclass(frozen=True)
+class Instrument:
+    inst_id: InstId
+    label: str
+    asset_class: AssetClass
+    history_start: pd.Timestamp | None = None
+
+
+def _inst(code: str, label: str, asset_class: AssetClass, start: str | None = None) -> Instrument:
+    return Instrument(
+        inst_id=InstId(f"{code}-USDT-SWAP"),
+        label=label,
+        asset_class=asset_class,
+        history_start=pd.Timestamp(start, tz="UTC") if start else None,
+    )
+
+
+CORE: tuple[Instrument, ...] = (
+    _inst("XAU", "黃金", AssetClass.METAL),
+    _inst("XAG", "白銀", AssetClass.METAL),
+    _inst("XPT", "鉑金", AssetClass.METAL),
+    _inst("XCU", "銅", AssetClass.METAL),
+    _inst("CL", "WTI 原油", AssetClass.ENERGY),
+    _inst("BZ", "布蘭特原油", AssetClass.ENERGY),
+    _inst("NG", "天然氣", AssetClass.ENERGY),
+    _inst("SPY", "S&P 500 ETF", AssetClass.US_EQUITY),
+    _inst("QQQ", "Nasdaq 100 ETF", AssetClass.US_EQUITY),
+    _inst("NVDA", "NVIDIA", AssetClass.US_EQUITY),
+    _inst("MU", "Micron", AssetClass.US_EQUITY),
+    _inst("GOOGL", "Alphabet", AssetClass.US_EQUITY),
+    _inst("AAPL", "Apple", AssetClass.US_EQUITY),
+    _inst("TSLA", "Tesla", AssetClass.US_EQUITY),
+    _inst("AMD", "AMD", AssetClass.US_EQUITY),
+    _inst("MSTR", "MicroStrategy", AssetClass.US_EQUITY),
+    _inst("TSM", "台積電 ADR", AssetClass.TAIWAN),
+    _inst("BTC", "BTC 對照組", AssetClass.CRYPTO_CONTROL, "2025-01-01"),
+    _inst("ETH", "ETH 對照組", AssetClass.CRYPTO_CONTROL, "2025-01-01"),
+)
+
+UNIVERSES: dict[str, tuple[Instrument, ...]] = {
+    "core": CORE,
+    "smoke": (CORE[0], CORE[7], CORE[16]),
+}
+
+
+def by_id(inst_id: str) -> Instrument:
+    for inst in CORE:
+        if inst.inst_id == inst_id:
+            return inst
+    raise KeyError(inst_id)
