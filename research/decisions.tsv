@@ -4,3 +4,8 @@ date	run_id	candidate	verdict	evidence	decided_by
 2026-11-08	pre-run	data:M2 listing-week variance	ACCEPTED	auditor: first 7 days hold 25-26% of IS variance on XAG/CL; fix: LISTING_BURN_IN	arbiter
 2026-11-08	pre-run	data:M3 concentrated outliers	COVERED	not_concentrated gate removes top 3 trades; 2026-03-23 shock judged real, kept	arbiter
 2026-11-08	pre-run	data:m2 funding boundary convention	ACCEPTED	pinned by test_funding_at_time_t_is_paid_by_a_position_held_from_the_open_at_t	arbiter
+2026-11-08	pre-run	data:US equity mask not DST-aware	ACCEPTED	reproduced: SPY Sun 2026-11-01 vol 22:00Z 43.6k vs 23:00Z 209k; fix: mask in America/New_York	arbiter
+2026-11-08	pre-run	data:US equity burn-in too short	ACCEPTED	reproduced: SPY regular-session thin share Mar 34.7%, Apr 5.9%, May 0.5%; fix: liquid_from() rolling 5d thin share < 2%	arbiter
+2026-11-08	pre-run	data:US holidays kept as sessions	ACCEPTED	auditor: Good Friday SPY 55% flat; fix: US_MARKET_HOLIDAYS in tradfi_closed	arbiter
+2026-11-08	pre-run	data:session-dependent spreads	DEFERRED	minor; execution-realist to test regular-hours-only fills on surviving candidates	arbiter
+2026-11-08	pre-run	data:TSM session	DEFERRED	uses ET mask; liquid_from applies automatically; recheck after download	arbiter
