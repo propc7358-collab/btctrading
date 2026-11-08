@@ -9,6 +9,8 @@
 - 更新資料：`uv run python -m quant.data.cli`（只抓公開行情，不需要金鑰）
 - 跑研究：`uv run python -m quant.research.cli`，報告在 `research/reports/`
 - 多角色研究回合：`/research-round`
+- 研究員 × 驗證者對決：`/strategy-duel`（規則與停止條件在 `.claude/skills/strategy-duel/SKILL.md`）
+- 合併組合研究：`uv run python -m quant.research.cli --pooled`
 
 ## 架構
 - `quant/data/`：OKX 抓資料（邊界，資料在這裡解析與驗證）、5m 原始資料、重採樣成各時間窗口。所有時間窗口都從同一份 5m 資料產生。
