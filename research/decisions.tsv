@@ -1,1 +1,6 @@
 date	run_id	candidate	verdict	evidence	decided_by
+2026-11-08	pre-run	data:B1 funding history only from 2026-08-06	ACCEPTED	reproduced: funding start 2026-08-06 on XAU/CL/BZ/XPT; CL mean -1.49bp, BZ -2.47bp	arbiter
+2026-11-08	pre-run	data:M1 closed-market bars are stale	ACCEPTED	reproduced: weekend share 0.29, XPT Sunday flat bars 0.50; fix: sessions.tradable_bars	arbiter
+2026-11-08	pre-run	data:M2 listing-week variance	ACCEPTED	auditor: first 7 days hold 25-26% of IS variance on XAG/CL; fix: LISTING_BURN_IN	arbiter
+2026-11-08	pre-run	data:M3 concentrated outliers	COVERED	not_concentrated gate removes top 3 trades; 2026-03-23 shock judged real, kept	arbiter
+2026-11-08	pre-run	data:m2 funding boundary convention	ACCEPTED	pinned by test_funding_at_time_t_is_paid_by_a_position_held_from_the_open_at_t	arbiter

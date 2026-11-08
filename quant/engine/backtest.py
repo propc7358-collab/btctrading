@@ -110,9 +110,12 @@ def bars_per_year(index: pd.DatetimeIndex) -> float:
 
 def _funding_cost(held: pd.Series, bar_hours: float, funding: pd.Series | None) -> pd.Series:
     index = pd.DatetimeIndex(held.index)
-    assumed_adverse = held.abs() * ASSUMED_FUNDING_PER_8H * bar_hours / 8
+    assumed_per_hour = ASSUMED_FUNDING_PER_8H / 8
     if funding is None or funding.empty:
-        return assumed_adverse
+        return held.abs() * assumed_per_hour * bar_hours
+    observed_per_hour = _observed_funding_per_hour(funding)
+    worst_side_rate = np.maximum(assumed_per_hour, np.sign(held) * observed_per_hour)
+    pre_coverage = held.abs() * worst_side_rate * bar_hours
     bucket = index.searchsorted(funding.index, side="right") - 1
     valid = (bucket >= 0) & (funding.index < index[-1] + pd.Timedelta(hours=bar_hours))
     actual = (
@@ -122,7 +125,22 @@ def _funding_cost(held: pd.Series, bar_hours: float, funding: pd.Series | None) 
         .reindex(index, fill_value=0.0)
     )
     covered = index >= funding.index[0]
-    return (held * actual).where(covered, assumed_adverse)
+    return (held * actual).where(covered, pre_coverage)
+
+
+def _observed_funding_per_hour(funding: pd.Series) -> float:
+    if len(funding) < 2:
+        return 0.0
+    interval = pd.Series(funding.index).diff().median()
+    span = funding.index[-1] - funding.index[0] + interval
+    hours = float(span / pd.Timedelta(hours=1))
+    return float(funding.sum()) / hours
+
+
+def funding_coverage(index: pd.DatetimeIndex, funding: pd.Series | None) -> float:
+    if funding is None or funding.empty or len(index) == 0:
+        return 0.0
+    return float((index >= funding.index[0]).mean())
 
 
 def backtest(

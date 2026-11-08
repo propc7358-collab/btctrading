@@ -7,7 +7,7 @@ from enum import Enum
 import pandas as pd
 
 from quant.data.universe import Instrument
-from quant.engine.backtest import DEFAULT_COSTS, CostModel, Result, backtest
+from quant.engine.backtest import DEFAULT_COSTS, CostModel, Result, backtest, funding_coverage
 from quant.research.gates import COST_STRESS_FACTOR, Evidence, GateResult, judge
 from quant.research.ledger import Ledger, Trial, params_key
 from quant.strategies.base import Params, Strategy
@@ -30,6 +30,7 @@ class Candidate:
     oos_result: Result
     evidence: Evidence
     gates: tuple[GateResult, ...]
+    oos_funding_coverage: float
 
     @property
     def accepted(self) -> bool:
@@ -66,6 +67,7 @@ class _Pending:
     stressed: Result
     buy_hold: Result
     neighbours: tuple[float, ...]
+    oos_funding_coverage: float
 
 
 def split_point(index: pd.DatetimeIndex, fraction: float = IS_FRACTION) -> pd.Timestamp:
@@ -156,6 +158,7 @@ def _select_and_test(
         stressed,
         buy_hold_oos,
         neighbours,
+        funding_coverage(pd.DatetimeIndex(oos_result.net.index), funding),
     )
 
 
@@ -177,6 +180,7 @@ def _judge(p: _Pending, n_trials: int) -> Candidate:
         p.oos_result,
         evidence,
         tuple(judge(evidence)),
+        p.oos_funding_coverage,
     )
 
 
@@ -215,6 +219,7 @@ def candidates_frame(candidates: list[Candidate]) -> pd.DataFrame:
             "timeframe": c.timeframe.value,
             "params": params_key(c.params),
             "is_sharpe": c.is_result.sharpe,
+            "oos_funding_coverage": c.oos_funding_coverage,
             "accepted": c.accepted,
             "verdict": c.verdict.value,
             "failed": ",".join(c.failed),

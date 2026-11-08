@@ -6,6 +6,7 @@ import pandas as pd
 
 from quant.data import okx
 from quant.data.resample import resample
+from quant.data.sessions import tradable_bars
 from quant.data.universe import Instrument
 from quant.types import Timeframe, validate_bars
 
@@ -43,7 +44,8 @@ def sync(inst: Instrument, data_dir: Path = DATA_DIR) -> pd.DataFrame:
 
 
 def load_bars(inst: Instrument, timeframe: Timeframe, data_dir: Path = DATA_DIR) -> pd.DataFrame:
-    return resample(pd.read_parquet(bars_path(inst, data_dir)), timeframe)
+    base = pd.read_parquet(bars_path(inst, data_dir))
+    return resample(tradable_bars(inst, base), timeframe)
 
 
 def load_funding(inst: Instrument, data_dir: Path = DATA_DIR) -> pd.Series:

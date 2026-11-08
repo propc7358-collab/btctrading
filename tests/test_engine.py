@@ -46,3 +46,21 @@ def test_engine_rejects_signals_outside_minus_one_zero_one(bad: list[float]) -> 
     bars = bars_from_opens([100, 101, 102])
     with pytest.raises(SignalError):
         backtest(bars, pd.Series(bad, index=bars.index), ZERO, NO_FUNDING)
+
+
+def test_funding_at_time_t_is_paid_by_a_position_held_from_the_open_at_t() -> None:
+    bars = bars_from_opens([100] * 6)
+    funding = pd.Series([0.0, 0.002], index=pd.DatetimeIndex([bars.index[0], bars.index[3]]))
+    entered_at_t = pd.Series([0.0, 0, 1, 1, 1, 1], index=bars.index)
+    closed_at_t = pd.Series([1.0, 1, 0, 0, 0, 0], index=bars.index)
+    assert backtest(bars, entered_at_t, ZERO, funding).net.iloc[3] == pytest.approx(-0.002)
+    assert backtest(bars, closed_at_t, ZERO, funding).net.iloc[3] == pytest.approx(0.0)
+
+
+def test_before_funding_history_each_side_pays_the_worse_of_assumed_and_observed() -> None:
+    bars = bars_from_opens([100] * 200)
+    observed = pd.Series(-0.0004, index=bars.index[100::8])
+    short = backtest(bars, pd.Series(-1.0, index=bars.index), ZERO, observed)
+    long = backtest(bars, pd.Series(1.0, index=bars.index), ZERO, observed)
+    assert short.net.iloc[50] == pytest.approx(-0.0004 / 8)
+    assert long.net.iloc[50] == pytest.approx(-ASSUMED_FUNDING_PER_8H / 8)

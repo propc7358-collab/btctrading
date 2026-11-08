@@ -27,6 +27,9 @@
 | 不能隱藏嘗試次數 | `Ledger` 由 `research()` 自動寫入，deflated Sharpe 的 N 從帳本讀 |
 | 門檻不能放寬到讓雜訊通過 | `tests/test_pipeline.py`：純雜訊 0 個通過，埋入趨勢必須被找到 |
 | 資金費率歷史不足時要保守 | `_funding_cost` 對多空兩邊都收費，`test_missing_funding_history_is_charged_against_both_sides` |
+| 不在傳統市場休市的 K 棒上算指標或成交 | `quant/data/sessions.py` 在重採樣前移除週五 21:00–週日 22:00 UTC 與每日 21:00 的 K 棒，`tests/test_sessions.py` |
+| 排除上市第一週的異常波動 | `tradable_bars()` 的 `LISTING_BURN_IN`，`test_tradfi_instruments_drop_closed_hours_and_listing_week` |
+| 沒有資金費率歷史時，各邊收較不利的費率 | `_funding_cost` 取假設值與觀察平均值的較差者，`test_before_funding_history_each_side_pays_the_worse_of_assumed_and_observed` |
 | 不寫註解 | `tools/check_no_comments.py`。用命名、型別、測試表達 |
 | 型別嚴格 | `mypy --strict` |
 
