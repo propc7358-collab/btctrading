@@ -11,6 +11,7 @@ from quant.data.store import load_bars, load_funding
 from quant.data.universe import UNIVERSES, Instrument
 from quant.research.gates import GATES
 from quant.research.ledger import Ledger
+from quant.research.pooled import POOLS, research_pooled
 from quant.research.run import Candidate, candidates_frame, research
 from quant.strategies import REGISTRY
 from quant.types import Timeframe
@@ -88,20 +89,20 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--timeframes", nargs="*", default=[t.value for t in Timeframe])
     parser.add_argument("--strategies", nargs="*", default=sorted(REGISTRY))
     parser.add_argument("--only", nargs="*", default=None)
+    parser.add_argument("--pooled", action="store_true", help="test each strategy on asset pools")
     args = parser.parse_args(argv)
     run_id = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
     instruments = [
         i for i in UNIVERSES[args.universe] if not args.only or i.inst_id.split("-")[0] in args.only
     ]
     ledger = Ledger()
-    candidates = research(
-        instruments,
-        [Timeframe(t) for t in args.timeframes],
-        [REGISTRY[s] for s in args.strategies],
-        load,
-        ledger,
-        run_id,
-    )
+    timeframes = [Timeframe(t) for t in args.timeframes]
+    strategies = [REGISTRY[s] for s in args.strategies]
+    if args.pooled:
+        run_id = f"{run_id}-pooled"
+        candidates = research_pooled(POOLS, timeframes, strategies, load, ledger, run_id)
+    else:
+        candidates = research(instruments, timeframes, strategies, load, ledger, run_id)
     REPORTS.mkdir(parents=True, exist_ok=True)
     n_trials = len(ledger.oos_trials())
     (REPORTS / f"{run_id}.md").write_text(render(run_id, candidates, n_trials))

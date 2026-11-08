@@ -58,7 +58,7 @@ class Verdict(Enum):
 
 
 @dataclass(frozen=True)
-class _Pending:
+class Pending:
     strategy: Strategy
     params: Params
     inst: Instrument
@@ -87,58 +87,63 @@ def research(
 ) -> list[Candidate]:
     strategies = list(strategies)
     timeframes = list(timeframes)
-    pending: list[_Pending] = []
+    pending: list[Pending] = []
     for inst in instruments:
         for tf in timeframes:
             bars, funding = load(inst, tf)
             if len(bars) < MIN_BARS:
                 continue
             inst_costs = costs or inst.costs
-            cut = split_point(pd.DatetimeIndex(bars.index))
-            start, end = bars.index[0], bars.index[-1] + tf.offset
-            buy_hold = backtest(bars, pd.Series(1.0, index=bars.index), inst_costs, funding)
+            index = pd.DatetimeIndex(bars.index)
+            coverage = funding_coverage(index[index >= split_point(index)], funding)
             for strategy in strategies:
                 pending.append(
-                    _select_and_test(
+                    select_and_test(
                         strategy,
                         inst,
                         tf,
-                        bars,
-                        funding,
-                        inst_costs,
-                        cut,
-                        start,
-                        end,
-                        buy_hold.window(cut, end),
+                        _single_evaluator(strategy, bars, funding, inst_costs),
+                        index,
                         ledger,
                         run_id,
+                        coverage,
                     )
                 )
-    ledger.flush()
-    oos = ledger.oos_trials()
-    n_trials = max(len(oos), 1)
-    return [_judge(p, n_trials) for p in pending]
+    return judge_all(pending, ledger)
 
 
-def _select_and_test(
+Evaluator = Callable[[Params | None, float], Result]
+
+
+def _single_evaluator(
+    strategy: Strategy, bars: pd.DataFrame, funding: pd.Series, costs: CostModel
+) -> Evaluator:
+    def evaluate(params: Params | None, cost_factor: float) -> Result:
+        signal = (
+            pd.Series(1.0, index=bars.index) if params is None else strategy.signal(bars, params)
+        )
+        return backtest(bars, signal, costs.scaled(cost_factor), funding)
+
+    return evaluate
+
+
+def select_and_test(
     strategy: Strategy,
     inst: Instrument,
     tf: Timeframe,
-    bars: pd.DataFrame,
-    funding: pd.Series,
-    costs: CostModel,
-    cut: pd.Timestamp,
-    start: pd.Timestamp,
-    end: pd.Timestamp,
-    buy_hold_oos: Result,
+    evaluate: Evaluator,
+    index: pd.DatetimeIndex,
     ledger: Ledger,
     run_id: str,
-) -> _Pending:
+    oos_funding_coverage: float,
+) -> Pending:
+    cut = split_point(index)
+    start, end = index[0], index[-1] + tf.offset
     is_sharpes: dict[str, float] = {}
     fulls: list[Result] = []
     best: tuple[float, Params, Result] | None = None
     for params in strategy.param_sets():
-        full = backtest(bars, strategy.signal(bars, params), costs, funding)
+        full = evaluate(params, 1.0)
         fulls.append(full)
         in_sample = full.window(start, cut)
         is_sharpes[params_key(params)] = in_sample.sharpe
@@ -148,16 +153,14 @@ def _select_and_test(
     if best is None:
         raise ValueError(f"{strategy.name} has an empty parameter grid")
     alt_oos = tuple(
-        _reselected_oos_sharpe(fulls, start, split_point(pd.DatetimeIndex(bars.index), f), end)
-        for f in ALT_IS_FRACTIONS
+        _reselected_oos_sharpe(fulls, start, split_point(index, f), end) for f in ALT_IS_FRACTIONS
     )
     _, params, full = best
-    signal = strategy.signal(bars, params)
-    stressed = backtest(bars, signal, costs.scaled(COST_STRESS_FACTOR), funding).window(cut, end)
+    stressed = evaluate(params, COST_STRESS_FACTOR).window(cut, end)
     oos_result = full.window(cut, end)
     ledger.record(_trial(run_id, "oos", strategy, params, inst, tf, oos_result))
     neighbours = tuple(is_sharpes[params_key(n)] for n in strategy.neighbours(params))
-    return _Pending(
+    return Pending(
         strategy,
         params,
         inst,
@@ -165,10 +168,10 @@ def _select_and_test(
         full.window(start, cut),
         oos_result,
         stressed,
-        buy_hold_oos,
+        evaluate(None, 1.0).window(cut, end),
         neighbours,
         alt_oos,
-        funding_coverage(pd.DatetimeIndex(oos_result.net.index), funding),
+        oos_funding_coverage,
     )
 
 
@@ -179,7 +182,13 @@ def _reselected_oos_sharpe(
     return chosen.window(cut, end).sharpe
 
 
-def _judge(p: _Pending, n_trials: int) -> Candidate:
+def judge_all(pending: list[Pending], ledger: Ledger) -> list[Candidate]:
+    ledger.flush()
+    n_trials = max(len(ledger.oos_trials()), 1)
+    return [_judge(p, n_trials) for p in pending]
+
+
+def _judge(p: Pending, n_trials: int) -> Candidate:
     evidence = Evidence(
         oos=p.oos_result,
         oos_stressed=p.stressed,
