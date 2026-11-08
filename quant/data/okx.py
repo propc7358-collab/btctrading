@@ -88,7 +88,9 @@ def fetch_candles(
     stop_ms = int(since.timestamp() * 1000)
     params = {"instId": inst_id, "bar": bar, "limit": str(PAGE_LIMIT)}
     rows: list[list[str]] = []
-    for page in _pages(fetch, "/api/v5/market/history-candles", params, lambda r: int(r[0]), stop_ms):
+    for page in _pages(
+        fetch, "/api/v5/market/history-candles", params, lambda r: int(r[0]), stop_ms
+    ):
         rows.extend(page)
     frame = parse_candles(rows)
     frame = frame[~frame.index.duplicated(keep="last")]
