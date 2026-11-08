@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 
+from quant.engine.backtest import DEFAULT_COSTS, CostModel
 from quant.types import AssetClass, InstId
 
 
@@ -13,14 +14,33 @@ class Instrument:
     label: str
     asset_class: AssetClass
     history_start: pd.Timestamp | None = None
+    costs: CostModel = DEFAULT_COSTS
+
+
+MEASURED_SLIPPAGE_BPS: dict[str, float] = {
+    "BTC": 1,
+    "ETH": 1,
+    "XAU": 1,
+    "XAG": 2,
+    "CL": 3,
+    "QQQ": 2,
+    "SPY": 3,
+    "NVDA": 3,
+    "MU": 3,
+    "AMD": 7,
+    "TSM": 6,
+}
+UNMEASURED_SLIPPAGE_BPS = 5.0
 
 
 def _inst(code: str, label: str, asset_class: AssetClass, start: str | None = None) -> Instrument:
+    slippage = MEASURED_SLIPPAGE_BPS.get(code, UNMEASURED_SLIPPAGE_BPS)
     return Instrument(
         inst_id=InstId(f"{code}-USDT-SWAP"),
         label=label,
         asset_class=asset_class,
         history_start=pd.Timestamp(start, tz="UTC") if start else None,
+        costs=CostModel(fee_bps=5.0, slippage_bps=slippage),
     )
 
 

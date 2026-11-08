@@ -15,6 +15,7 @@ MIN_DEFLATED_SHARPE = 0.95
 COST_STRESS_FACTOR = 2.0
 PLATEAU_RATIO = 0.5
 TOP_TRADES_REMOVED = 3
+MIN_IS_SHARPE = 0.5
 
 
 @dataclass(frozen=True)
@@ -24,6 +25,7 @@ class Evidence:
     buy_hold_oos: Result
     best_is_sharpe: float
     neighbour_is_sharpes: tuple[float, ...]
+    alt_split_oos_sharpes: tuple[float, ...]
     n_trials: int
 
 
@@ -123,6 +125,27 @@ def beats_buy_and_hold(e: Evidence) -> GateResult:
     )
 
 
+def in_sample_edge(e: Evidence) -> GateResult:
+    return GateResult(
+        "in_sample_edge",
+        e.best_is_sharpe >= MIN_IS_SHARPE,
+        e.best_is_sharpe,
+        MIN_IS_SHARPE,
+        "樣本內本來就有優勢，不是挑出「虧最少」的參數後在樣本外翻正",
+    )
+
+
+def split_robust(e: Evidence) -> GateResult:
+    worst = min(e.alt_split_oos_sharpes, default=0.0)
+    return GateResult(
+        "split_robust",
+        worst > 0,
+        worst,
+        0.0,
+        "樣本內外切點改到 50% 與 70% 重新選參數，樣本外仍賺錢",
+    )
+
+
 GATES: tuple[Gate, ...] = (
     enough_trades,
     oos_sharpe,
@@ -132,6 +155,8 @@ GATES: tuple[Gate, ...] = (
     not_concentrated,
     stable_halves,
     beats_buy_and_hold,
+    in_sample_edge,
+    split_robust,
 )
 
 

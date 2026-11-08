@@ -7,13 +7,14 @@ from enum import Enum
 import pandas as pd
 
 from quant.data.universe import Instrument
-from quant.engine.backtest import DEFAULT_COSTS, CostModel, Result, backtest, funding_coverage
+from quant.engine.backtest import CostModel, Result, backtest, funding_coverage
 from quant.research.gates import COST_STRESS_FACTOR, Evidence, GateResult, judge
 from quant.research.ledger import Ledger, Trial, params_key
 from quant.strategies.base import Params, Strategy
 from quant.types import Timeframe
 
 IS_FRACTION = 0.6
+ALT_IS_FRACTIONS = (0.5, 0.7)
 MIN_BARS = 500
 WATCH_MIN_DEFLATED_SHARPE = 0.5
 
@@ -67,6 +68,7 @@ class _Pending:
     stressed: Result
     buy_hold: Result
     neighbours: tuple[float, ...]
+    alt_split_oos_sharpes: tuple[float, ...]
     oos_funding_coverage: float
 
 
@@ -81,7 +83,7 @@ def research(
     load: Loader,
     ledger: Ledger,
     run_id: str,
-    costs: CostModel = DEFAULT_COSTS,
+    costs: CostModel | None = None,
 ) -> list[Candidate]:
     strategies = list(strategies)
     timeframes = list(timeframes)
@@ -91,9 +93,10 @@ def research(
             bars, funding = load(inst, tf)
             if len(bars) < MIN_BARS:
                 continue
+            inst_costs = costs or inst.costs
             cut = split_point(pd.DatetimeIndex(bars.index))
             start, end = bars.index[0], bars.index[-1] + tf.offset
-            buy_hold = backtest(bars, pd.Series(1.0, index=bars.index), costs, funding)
+            buy_hold = backtest(bars, pd.Series(1.0, index=bars.index), inst_costs, funding)
             for strategy in strategies:
                 pending.append(
                     _select_and_test(
@@ -102,7 +105,7 @@ def research(
                         tf,
                         bars,
                         funding,
-                        costs,
+                        inst_costs,
                         cut,
                         start,
                         end,
@@ -132,9 +135,11 @@ def _select_and_test(
     run_id: str,
 ) -> _Pending:
     is_sharpes: dict[str, float] = {}
+    fulls: list[Result] = []
     best: tuple[float, Params, Result] | None = None
     for params in strategy.param_sets():
         full = backtest(bars, strategy.signal(bars, params), costs, funding)
+        fulls.append(full)
         in_sample = full.window(start, cut)
         is_sharpes[params_key(params)] = in_sample.sharpe
         ledger.record(_trial(run_id, "is", strategy, params, inst, tf, in_sample))
@@ -142,6 +147,10 @@ def _select_and_test(
             best = (in_sample.sharpe, params, full)
     if best is None:
         raise ValueError(f"{strategy.name} has an empty parameter grid")
+    alt_oos = tuple(
+        _reselected_oos_sharpe(fulls, start, split_point(pd.DatetimeIndex(bars.index), f), end)
+        for f in ALT_IS_FRACTIONS
+    )
     _, params, full = best
     signal = strategy.signal(bars, params)
     stressed = backtest(bars, signal, costs.scaled(COST_STRESS_FACTOR), funding).window(cut, end)
@@ -158,8 +167,16 @@ def _select_and_test(
         stressed,
         buy_hold_oos,
         neighbours,
+        alt_oos,
         funding_coverage(pd.DatetimeIndex(oos_result.net.index), funding),
     )
+
+
+def _reselected_oos_sharpe(
+    fulls: list[Result], start: pd.Timestamp, cut: pd.Timestamp, end: pd.Timestamp
+) -> float:
+    chosen = max(fulls, key=lambda full: full.window(start, cut).sharpe)
+    return chosen.window(cut, end).sharpe
 
 
 def _judge(p: _Pending, n_trials: int) -> Candidate:
@@ -169,6 +186,7 @@ def _judge(p: _Pending, n_trials: int) -> Candidate:
         buy_hold_oos=p.buy_hold,
         best_is_sharpe=p.is_result.sharpe,
         neighbour_is_sharpes=p.neighbours,
+        alt_split_oos_sharpes=p.alt_split_oos_sharpes,
         n_trials=n_trials,
     )
     return Candidate(

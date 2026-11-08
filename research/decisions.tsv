@@ -10,3 +10,13 @@ date	run_id	candidate	verdict	evidence	decided_by
 2026-11-08	pre-run	data:session-dependent spreads	DEFERRED	minor; execution-realist to test regular-hours-only fills on surviving candidates	arbiter
 2026-11-08	pre-run	data:TSM session	DEFERRED	uses ET mask; liquid_from applies automatically; recheck after download	arbiter
 2026-11-08	pre-run	data:TSM 18-20 ET thin (15-17%)	DEFERRED	measured ET-hour thin share; execution-realist to test	arbiter
+2026-11-08	20261108-145511	donchian_breakout AMD 10m	REJECT	reproduced: all 6 IS grid points negative (-3.88..-1.68); OOS gain is a regime flip	arbiter
+2026-11-08	20261108-145511	donchian_breakout NVDA 30m	REJECT	skeptic: IS no edge (5/6 negative), fails parameter_plateau gate; one bet with NVDA 1h	arbiter
+2026-11-08	20261108-145511	donchian_breakout NVDA 1h	REJECT	skeptic: IS_FRACTION 0.5 reselect OOS -1.48; reproduced daily corr 0.79 with NVDA tsmom	arbiter
+2026-11-08	20261108-145511	tsmom NVDA 1h	REJECT	isolated IS spike, fails plateau and not_concentrated gates; reproduced short side +18.3% vs long +2.8%	arbiter
+2026-11-08	20261108-145511	ema_trend AMD 30m	REJECT	gates REJECT (DSR 0.05); reproduced IS_FRACTION 0.5 reselect OOS 0.95; roles cannot override gates	arbiter
+2026-11-08	20261108-145511	trend_pullback ETH 4h	REJECT	DSR 0.04 < 0.5 so not WATCH; crypto control, outside mandate	arbiter
+2026-11-08	20261108-145511	execution: per-instrument costs	ACCEPTED	reproduced books: TSM ask depth $38k (50k order unfillable), NVDA $531k, XAU $3.7M; fix: Instrument.costs	arbiter
+2026-11-08	20261108-145511	lesson: least-bad IS selection	ENCODED	gate in_sample_edge (best IS Sharpe >= 0.5), tests/test_gates.py	arbiter
+2026-11-08	20261108-145511	lesson: split sensitivity	ENCODED	gate split_robust (reselect at IS 50%/70%, OOS > 0), tests/test_gates.py	arbiter
+2026-11-08	20261108-150559	round 2 with real costs and 10 gates	NONE ACCEPTED	532 candidates, 0 accept, 0 watch; ledger OOS trials 550	arbiter
