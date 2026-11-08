@@ -184,7 +184,7 @@ def _reselected_oos_sharpe(
 
 def judge_all(pending: list[Pending], ledger: Ledger) -> list[Candidate]:
     ledger.flush()
-    n_trials = max(len(ledger.oos_trials()), 1)
+    n_trials = max(ledger.oos_trial_count(), 1)
     return [_judge(p, n_trials) for p in pending]
 
 

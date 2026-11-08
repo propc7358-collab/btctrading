@@ -104,7 +104,7 @@ def main(argv: list[str] | None = None) -> int:
     else:
         candidates = research(instruments, timeframes, strategies, load, ledger, run_id)
     REPORTS.mkdir(parents=True, exist_ok=True)
-    n_trials = len(ledger.oos_trials())
+    n_trials = ledger.oos_trial_count()
     (REPORTS / f"{run_id}.md").write_text(render(run_id, candidates, n_trials))
     candidates_frame(candidates).to_csv(REPORTS / f"{run_id}.csv", index=False)
     accepted = sum(c.accepted for c in candidates)

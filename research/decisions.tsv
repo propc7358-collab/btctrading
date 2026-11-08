@@ -23,3 +23,8 @@ date	run_id	candidate	verdict	evidence	decided_by
 2026-11-08	20261108-151544-pooled	pooled baseline: 4 pools x 4 tf x 7 strategies	NONE ACCEPTED	112 candidates, 0 accept/watch; best donchian energy 4h OOS 3.13, DSR 0.05	arbiter
 2026-11-08	20261108-152254 / 20261108-152323-pooled	duel r1: reopen_gap_fade, volume_shock_reversal	NONE ACCEPTED	single 152 + pooled 32 candidates, 0 accept/watch; best pooled gap fade equities 4h OOS 0.86	arbiter
 2026-11-08	duel r1	lesson: causality test used gapless constant-volume data	ENCODED	added session dataset with gaps and lognormal volume, plus non-vacuity test that every strategy trades on it	arbiter
+2026-11-08	duel r1	volume_shock_reversal MU 30m	REJECT	reproduced: same params OOS SPY -6.51, AMD -4.12, QQQ -2.55, NVDA -1.31	arbiter
+2026-11-08	duel r1	reopen_gap_fade MSTR 4h / XAG 4h / equities 4h	REJECT	validator KILL: 3-4 OOS trades, beta to BTC/silver trend, 17 trades on 6 weekends; not reproduced (no accept/watch)	arbiter
+2026-11-08	duel r1	ledger trial count deduped reruns	ENCODED (stricter)	reproduced raw 1360 vs dedup 846; DSR N now counts every OOS evaluation; test_rerunning_the_same_configuration_counts_as_another_trial	arbiter
+2026-11-08	duel r1	statistical bar	NOTED	reproduced: 0.21y OOS, N 846 -> WATCH needs annual Sharpe ~7.25, ACCEPT ~10.75	arbiter
+2026-11-08	duel r1	single-stock session mask (17-18 ET not a closed underlying)	DEFERRED	changing data processing mid-duel is out of bounds; revisit after duel	arbiter

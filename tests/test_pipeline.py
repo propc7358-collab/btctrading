@@ -90,3 +90,12 @@ def test_pooled_noise_produces_nothing_and_a_pooled_planted_trend_is_found(tmp_p
     }
     assert ("POOL:trend", Family.TREND) in surviving
     assert all(inst == "POOL:trend" for inst, _ in surviving)
+
+
+def test_rerunning_the_same_configuration_counts_as_another_trial(tmp_path: Path) -> None:
+    inst = _instrument("RERUN")
+    data = {inst.inst_id: make_bars(2000, seed=5)}
+    ledger = Ledger(tmp_path / "ledger.csv")
+    for run in ("first", "second"):
+        research([inst], [Timeframe.H1], [REGISTRY["tsmom"]], _loader(data), ledger, run)
+    assert ledger.oos_trial_count() == 2

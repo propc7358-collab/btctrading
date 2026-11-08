@@ -53,6 +53,10 @@ class Ledger:
             frames.append(pd.DataFrame([asdict(t) for t in self._pending]))
         return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
 
+    def oos_trial_count(self) -> int:
+        frame = self.frame()
+        return 0 if frame.empty else int((frame["phase"] == "oos").sum())
+
     def oos_trials(self) -> pd.DataFrame:
         frame = self.frame()
         if frame.empty:
