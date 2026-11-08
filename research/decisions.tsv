@@ -9,3 +9,4 @@ date	run_id	candidate	verdict	evidence	decided_by
 2026-11-08	pre-run	data:US holidays kept as sessions	ACCEPTED	auditor: Good Friday SPY 55% flat; fix: US_MARKET_HOLIDAYS in tradfi_closed	arbiter
 2026-11-08	pre-run	data:session-dependent spreads	DEFERRED	minor; execution-realist to test regular-hours-only fills on surviving candidates	arbiter
 2026-11-08	pre-run	data:TSM session	DEFERRED	uses ET mask; liquid_from applies automatically; recheck after download	arbiter
+2026-11-08	pre-run	data:TSM 18-20 ET thin (15-17%)	DEFERRED	measured ET-hour thin share; execution-realist to test	arbiter
