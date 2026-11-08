@@ -28,3 +28,6 @@ date	run_id	candidate	verdict	evidence	decided_by
 2026-11-08	duel r1	ledger trial count deduped reruns	ENCODED (stricter)	reproduced raw 1360 vs dedup 846; DSR N now counts every OOS evaluation; test_rerunning_the_same_configuration_counts_as_another_trial	arbiter
 2026-11-08	duel r1	statistical bar	NOTED	reproduced: 0.21y OOS, N 846 -> WATCH needs annual Sharpe ~7.25, ACCEPT ~10.75	arbiter
 2026-11-08	duel r1	single-stock session mask (17-18 ET not a closed underlying)	DEFERRED	changing data processing mid-duel is out of bounds; revisit after duel	arbiter
+2026-11-08	20261108-154007 / 20261108-154014-pooled	duel r2: dark_hours_drift_fade	REJECT	loses in-sample on both sides (equities pool IS -2.9..-5.2); best DSR 0.004; validator not dispatched, nothing to attack	arbiter
+2026-11-08	duel r2	stop duel after 2 of 12 rounds	DECIDED	researcher and validator agree no per-instrument rule can reach the bar (WATCH ~7.5, ACCEPT ~11 annual Sharpe); more rounds only raise N	arbiter
+2026-11-08	forward	pre-register 10 candidates at 2026-11-08T16:00Z	DECIDED	selected by min(IS, OOS) Sharpe with IS>=0.5, OOS>0, >=15 OOS trades; excluded killed MU volume-shock and ETH control; forward N=10	arbiter

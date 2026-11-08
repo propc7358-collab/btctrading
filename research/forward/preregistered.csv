@@ -1,0 +1,11 @@
+registered_at,strategy,inst_id,timeframe,params
+2026-11-08T16:00:00Z,tsmom,MU-USDT-SWAP,4h,"{""lookback"": 24, ""min_move_atr"": 0.0}"
+2026-11-08T16:00:00Z,tsmom,CL-USDT-SWAP,4h,"{""lookback"": 24, ""min_move_atr"": 0.0}"
+2026-11-08T16:00:00Z,ema_trend,AMD-USDT-SWAP,30m,"{""fast"": 20, ""min_gap_atr"": 0.0, ""slow"": 50}"
+2026-11-08T16:00:00Z,ema_trend,BZ-USDT-SWAP,30m,"{""fast"": 20, ""min_gap_atr"": 0.0, ""slow"": 200}"
+2026-11-08T16:00:00Z,tsmom,MSTR-USDT-SWAP,4h,"{""lookback"": 96, ""min_move_atr"": 2.0}"
+2026-11-08T16:00:00Z,volatility_breakout,AMD-USDT-SWAP,30m,"{""k"": 1.0, ""squeeze"": 96}"
+2026-11-08T16:00:00Z,tsmom,AMD-USDT-SWAP,1h,"{""lookback"": 24, ""min_move_atr"": 0.0}"
+2026-11-08T16:00:00Z,ema_trend,MU-USDT-SWAP,1h,"{""fast"": 10, ""min_gap_atr"": 0.5, ""slow"": 50}"
+2026-11-08T16:00:00Z,ema_trend,NVDA-USDT-SWAP,30m,"{""fast"": 20, ""min_gap_atr"": 0.0, ""slow"": 100}"
+2026-11-08T16:00:00Z,donchian_breakout,POOL:energy,4h,"{""entry"": 20, ""exit"": 20}"

@@ -102,7 +102,7 @@ def research(
                         strategy,
                         inst,
                         tf,
-                        _single_evaluator(strategy, bars, funding, inst_costs),
+                        single_evaluator(strategy, bars, funding, inst_costs),
                         index,
                         ledger,
                         run_id,
@@ -115,7 +115,7 @@ def research(
 Evaluator = Callable[[Params | None, float], Result]
 
 
-def _single_evaluator(
+def single_evaluator(
     strategy: Strategy, bars: pd.DataFrame, funding: pd.Series, costs: CostModel
 ) -> Evaluator:
     def evaluate(params: Params | None, cost_factor: float) -> Result:

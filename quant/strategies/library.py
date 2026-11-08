@@ -217,3 +217,64 @@ def volume_shock_reversal(bars: pd.DataFrame, k: float, hold_hours: float) -> pd
         enter_short=shock_up,
         exit_short=shock_down | reopen | timed_out | (close <= anchor),
     )
+
+
+def _clock_at_bar_end(index: pd.DatetimeIndex) -> tuple[pd.Series, pd.Series]:
+    _, spacing = _bar_spacing(index)
+    spacing_minutes = spacing * 60
+    ends = index.tz_convert(EXCHANGE_TZ) + pd.to_timedelta(spacing_minutes.to_numpy(), unit="min")
+    end_minutes = pd.Series(np.asarray(ends.hour * 60 + ends.minute, dtype=float), index=index)
+    return end_minutes, spacing_minutes
+
+
+def _last_bar_ending_by(index: pd.DatetimeIndex, minute_of_day: int) -> pd.Series:
+    end, spacing = _clock_at_bar_end(index)
+    return ((end <= minute_of_day) & (end + spacing > minute_of_day)).fillna(False).astype(bool)
+
+
+def _first_bar_ending_after(index: pd.DatetimeIndex, minute_of_day: int) -> pd.Series:
+    end, spacing = _clock_at_bar_end(index)
+    return ((end >= minute_of_day) & (end - spacing < minute_of_day)).fillna(False).astype(bool)
+
+
+AFTER_HOURS_END_MIN = 20 * 60
+PREMARKET_START_MIN = 4 * 60
+REGULAR_SETTLED_MIN = 10 * 60
+MAX_NIGHT_HOURS = 12.0
+
+
+@register(
+    Family.MEAN_REVERSION,
+    "On weekday nights between the end of US after-hours (20:00 ET) and the start of "
+    "pre-market (04:00 ET) a single-stock perp is priced by crypto-native traders while the "
+    "stock itself is effectively dark, so its idiosyncratic drift cannot be hedged and "
+    "overshoots; when stock hedgers return from 04:00 and the regular open settles, the perp "
+    "is pulled back toward the stock. The overshooting night traders pay; the edge survives "
+    "because carrying the dark-hours risk ties up capital that cannot be hedged.",
+    z=(0.25, 0.5),
+)
+def dark_hours_drift_fade(bars: pd.DataFrame, z: float) -> pd.Series:
+    index = pd.DatetimeIndex(bars.index)
+    close = bars["close"]
+    reopen = _reopen_bars(index)
+    _, spacing = _bar_spacing(index)
+    step = np.log(close).diff().where(~reopen)
+    daily_sigma = step.rolling(100, min_periods=50).std().shift(1) * (24 / spacing) ** 0.5
+    anchor_bar = _last_bar_ending_by(index, AFTER_HOURS_END_MIN)
+    entry_bar = _last_bar_ending_by(index, PREMARKET_START_MIN)
+    exit_bar = _first_bar_ending_after(index, REGULAR_SETTLED_MIN)
+    clock = index.to_series()
+    anchor_close = close.where(anchor_bar).ffill()
+    anchor_time = clock.where(anchor_bar).ffill()
+    reopens_seen = reopen.astype(int).cumsum()
+    same_night = ((clock - anchor_time) <= pd.Timedelta(hours=MAX_NIGHT_HOURS)) & (
+        reopens_seen == reopens_seen.where(anchor_bar).ffill()
+    )
+    drift = np.log(close / anchor_close) / daily_sigma
+    tradable = entry_bar & same_night
+    return hold_until(
+        enter_long=tradable & (drift < -z),
+        exit_long=exit_bar | reopen,
+        enter_short=tradable & (drift > z),
+        exit_short=exit_bar | reopen,
+    )

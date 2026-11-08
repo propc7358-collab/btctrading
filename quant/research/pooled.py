@@ -48,7 +48,7 @@ def _daily(series: pd.Series) -> pd.Series:
     return series.groupby(index.floor("1D")).sum()
 
 
-def _pooled_evaluator(strategy: Strategy, legs: Sequence[Leg]) -> Evaluator:
+def pooled_evaluator(strategy: Strategy, legs: Sequence[Leg]) -> Evaluator:
     weight = 1 / len(legs)
 
     def evaluate(params: Params | None, cost_factor: float) -> Result:
@@ -73,7 +73,7 @@ def _pooled_evaluator(strategy: Strategy, legs: Sequence[Leg]) -> Evaluator:
     return evaluate
 
 
-def _legs(members: Iterable[Instrument], tf: Timeframe, load: Loader) -> list[Leg]:
+def pool_legs(members: Iterable[Instrument], tf: Timeframe, load: Loader) -> list[Leg]:
     loaded = [(inst, *load(inst, tf)) for inst in members]
     loaded = [(i, b, f) for i, b, f in loaded if len(b) >= MIN_BARS]
     if len(loaded) < 2:
@@ -95,10 +95,10 @@ def research_pooled(
     pending: list[Pending] = []
     for name, members in pools.items():
         for tf in timeframes:
-            legs = _legs(members, tf, load)
+            legs = pool_legs(members, tf, load)
             if not legs:
                 continue
-            probe = _pooled_evaluator(strategies[0], legs)(None, 1.0)
+            probe = pooled_evaluator(strategies[0], legs)(None, 1.0)
             index = pd.DatetimeIndex(probe.net.index)
             cut = split_point(index)
             coverage = min(
@@ -113,7 +113,7 @@ def research_pooled(
                         strategy,
                         pool_instrument(name),
                         tf,
-                        _pooled_evaluator(strategy, legs),
+                        pooled_evaluator(strategy, legs),
                         index,
                         ledger,
                         run_id,
