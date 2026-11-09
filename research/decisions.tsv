@@ -33,3 +33,4 @@ date	run_id	candidate	verdict	evidence	decided_by
 2026-11-08	forward	pre-register 10 candidates at 2026-11-08T16:00Z	DECIDED	selected by min(IS, OOS) Sharpe with IS>=0.5, OOS>0, >=15 OOS trades; excluded killed MU volume-shock and ETH control; forward N=10	arbiter
 2026-11-09	forward	pre-register volume_shock_reversal MU 30m	DECIDED	user request; backtest OOS 2.11 but 7.5% of 200 shuffled-MU runs reach >=2.11 and peers lose; forward N now 11	user+arbiter
 2026-11-09	xaut study 20261109-100929	pre-registered gold trend on XAUT 4h/1h	REJECT ALL	best tsmom 4h OOS Sharpe 1.04, +35%, DSR 0.46 (N=6) / 0.017 (N=1422); per plan no second search	arbiter
+2026-11-09	forward	pre-register tsmom XAU perp 4h (lookback 192)	DECIDED	user request; from XAUT study (OOS Sharpe 1.04, DSR 0.46 at N=6); registered on the XAU perpetual that would be traded; forward N now 12	user+arbiter
