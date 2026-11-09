@@ -32,3 +32,4 @@ date	run_id	candidate	verdict	evidence	decided_by
 2026-11-08	duel r2	stop duel after 2 of 12 rounds	DECIDED	researcher and validator agree no per-instrument rule can reach the bar (WATCH ~7.5, ACCEPT ~11 annual Sharpe); more rounds only raise N	arbiter
 2026-11-08	forward	pre-register 10 candidates at 2026-11-08T16:00Z	DECIDED	selected by min(IS, OOS) Sharpe with IS>=0.5, OOS>0, >=15 OOS trades; excluded killed MU volume-shock and ETH control; forward N=10	arbiter
 2026-11-09	forward	pre-register volume_shock_reversal MU 30m	DECIDED	user request; backtest OOS 2.11 but 7.5% of 200 shuffled-MU runs reach >=2.11 and peers lose; forward N now 11	user+arbiter
+2026-11-09	xaut study 20261109-100929	pre-registered gold trend on XAUT 4h/1h	REJECT ALL	best tsmom 4h OOS Sharpe 1.04, +35%, DSR 0.46 (N=6) / 0.017 (N=1422); per plan no second search	arbiter
