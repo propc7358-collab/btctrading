@@ -18,6 +18,9 @@ class Instrument:
     base_bar: str = "5m"
     inst_type: str = "SWAP"
     funding_from: InstId | None = None
+    source: str = "okx"
+    price_scale: float = 1.0
+    history_end: pd.Timestamp | None = None
 
 
 MEASURED_SLIPPAGE_BPS: dict[str, float] = {
@@ -79,10 +82,42 @@ XAUT = Instrument(
     funding_from=CORE[0].inst_id,
 )
 
+LONGHIST_END = pd.Timestamp("2025-04-01", tz="UTC")
+LONGHIST_START = pd.Timestamp("2005-01-01", tz="UTC")
+
+
+def _long(
+    symbol: str, label: str, asset_class: AssetClass, okx_code: str, scale: float
+) -> Instrument:
+    perp = next(i for i in CORE if i.inst_id == f"{okx_code}-USDT-SWAP")
+    return Instrument(
+        inst_id=InstId(f"DUKA:{symbol}"),
+        label=label,
+        asset_class=asset_class,
+        history_start=LONGHIST_START,
+        costs=perp.costs,
+        base_bar="1H",
+        inst_type="CFD",
+        source="dukascopy",
+        price_scale=scale,
+        history_end=LONGHIST_END,
+    )
+
+
+LONGHIST: tuple[Instrument, ...] = (
+    _long("XAUUSD", "黃金（長歷史）", AssetClass.METAL, "XAU", 1000),
+    _long("XAGUSD", "白銀（長歷史）", AssetClass.METAL, "XAG", 1000),
+    _long("COPPERCMDUSD", "銅（長歷史）", AssetClass.METAL, "XCU", 10000),
+    _long("LIGHTCMDUSD", "WTI 原油（長歷史）", AssetClass.ENERGY, "CL", 1000),
+    _long("BRENTCMDUSD", "布蘭特原油（長歷史，追蹤偏差大）", AssetClass.ENERGY, "BZ", 1000),
+    _long("GASCMDUSD", "天然氣（長歷史，追蹤很差）", AssetClass.ENERGY, "NG", 10000),
+)
+
 UNIVERSES: dict[str, tuple[Instrument, ...]] = {
     "core": CORE,
     "smoke": (CORE[0], CORE[7], CORE[16]),
     "xaut": (XAUT,),
+    "longhist": LONGHIST,
 }
 
 

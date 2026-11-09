@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from quant.data import okx
+from quant.data import dukascopy, okx
 from quant.data.resample import resample
 from quant.data.sessions import tradable_bars
 from quant.data.universe import Instrument, by_id
@@ -21,8 +21,19 @@ def funding_path(inst: Instrument, data_dir: Path = DATA_DIR) -> Path:
     return data_dir / f"{inst.inst_id}_funding.parquet"
 
 
+def _sync_dukascopy(inst: Instrument, data_dir: Path) -> pd.DataFrame:
+    if inst.history_start is None or inst.history_end is None:
+        raise ValueError(f"{inst.inst_id} needs history_start and history_end")
+    symbol = inst.inst_id.removeprefix("DUKA:")
+    bars = dukascopy.fetch_hourly(symbol, inst.price_scale, inst.history_start, inst.history_end)
+    bars.to_parquet(bars_path(inst, data_dir))
+    return bars
+
+
 def sync(inst: Instrument, data_dir: Path = DATA_DIR) -> pd.DataFrame:
     data_dir.mkdir(parents=True, exist_ok=True)
+    if inst.source == "dukascopy":
+        return _sync_dukascopy(inst, data_dir)
     path = bars_path(inst, data_dir)
     listed = okx.list_time(inst.inst_id, inst.inst_type)
     start = max(listed, inst.history_start) if inst.history_start else listed
@@ -46,6 +57,8 @@ def sync(inst: Instrument, data_dir: Path = DATA_DIR) -> pd.DataFrame:
 
 def load_bars(inst: Instrument, timeframe: Timeframe, data_dir: Path = DATA_DIR) -> pd.DataFrame:
     base = pd.read_parquet(bars_path(inst, data_dir))
+    if inst.history_end is not None:
+        base = base[base.index < inst.history_end]
     return resample(tradable_bars(inst, base), timeframe)
 
 

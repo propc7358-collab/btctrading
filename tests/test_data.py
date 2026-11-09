@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 import pandas as pd
@@ -64,3 +65,28 @@ def test_four_hour_bars_can_be_built_from_hourly_base_bars() -> None:
     assert len(bars) == 6
     with pytest.raises(ValueError):
         resample(make_bars(24, freq="1h"), Timeframe.M30)
+
+
+def test_dukascopy_records_parse_open_close_low_high_with_scale() -> None:
+    import lzma
+    import struct
+
+    from quant.data.dukascopy import parse_month
+
+    month = pd.Timestamp("2020-06-01")
+    raw = struct.pack(">IIIIIf", 3600, 1739715, 1735058, 1734368, 1739725, 1.5)
+    bars = parse_month(lzma.compress(raw), month, 1000)
+    assert bars.index[0] == pd.Timestamp("2020-06-01 01:00", tz="UTC")
+    assert bars.iloc[0].to_dict() == pytest.approx(
+        {"open": 1739.715, "high": 1739.725, "low": 1734.368, "close": 1735.058, "volume": 1.5}
+    )
+
+
+def test_long_history_instruments_never_load_data_after_the_cutoff(tmp_path: Path) -> None:
+    from quant.data.store import bars_path, load_bars
+    from quant.data.universe import LONGHIST, LONGHIST_END
+
+    inst = LONGHIST[0]
+    base = make_bars(24 * 120, freq="1h", start="2025-01-01")
+    base.to_parquet(bars_path(inst, tmp_path))
+    assert load_bars(inst, Timeframe.H4, tmp_path).index.max() < LONGHIST_END
