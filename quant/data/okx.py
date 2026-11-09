@@ -112,8 +112,8 @@ def fetch_funding(inst_id: InstId, since: pd.Timestamp, fetch: Fetcher = http_ge
     return series[~series.index.duplicated(keep="last")]
 
 
-def list_time(inst_id: InstId, fetch: Fetcher = http_get) -> pd.Timestamp:
-    data = fetch("/api/v5/public/instruments", {"instType": "SWAP", "instId": inst_id})["data"]
+def list_time(inst_id: InstId, inst_type: str = "SWAP", fetch: Fetcher = http_get) -> pd.Timestamp:
+    data = fetch("/api/v5/public/instruments", {"instType": inst_type, "instId": inst_id})["data"]
     if not data:
         raise OkxError(f"unknown instrument {inst_id}")
     return pd.Timestamp(int(data[0]["listTime"]), unit="ms", tz="UTC")

@@ -57,3 +57,10 @@ def test_fetch_paginates_backwards_and_drops_unconfirmed_candles() -> None:
     assert len(bars) == 249
     assert bars.index[0] == start
     assert len(calls) == 3
+
+
+def test_four_hour_bars_can_be_built_from_hourly_base_bars() -> None:
+    bars = resample(make_bars(24, freq="1h"), Timeframe.H4)
+    assert len(bars) == 6
+    with pytest.raises(ValueError):
+        resample(make_bars(24, freq="1h"), Timeframe.M30)

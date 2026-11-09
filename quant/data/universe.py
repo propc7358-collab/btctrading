@@ -15,6 +15,9 @@ class Instrument:
     asset_class: AssetClass
     history_start: pd.Timestamp | None = None
     costs: CostModel = DEFAULT_COSTS
+    base_bar: str = "5m"
+    inst_type: str = "SWAP"
+    funding_from: InstId | None = None
 
 
 MEASURED_SLIPPAGE_BPS: dict[str, float] = {
@@ -66,14 +69,26 @@ CORE: tuple[Instrument, ...] = (
     _inst("ETH", "ETH 對照組", AssetClass.CRYPTO_CONTROL, "2025-01-01"),
 )
 
+XAUT = Instrument(
+    inst_id=InstId("XAUT-USDT"),
+    label="XAUT 代幣化黃金（長歷史代理）",
+    asset_class=AssetClass.METAL,
+    costs=CORE[0].costs,
+    base_bar="1H",
+    inst_type="SPOT",
+    funding_from=CORE[0].inst_id,
+)
+
 UNIVERSES: dict[str, tuple[Instrument, ...]] = {
     "core": CORE,
     "smoke": (CORE[0], CORE[7], CORE[16]),
+    "xaut": (XAUT,),
 }
 
 
 def by_id(inst_id: str) -> Instrument:
-    for inst in CORE:
-        if inst.inst_id == inst_id:
-            return inst
+    for universe in UNIVERSES.values():
+        for inst in universe:
+            if inst.inst_id == inst_id:
+                return inst
     raise KeyError(inst_id)

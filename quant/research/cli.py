@@ -90,12 +90,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--strategies", nargs="*", default=sorted(REGISTRY))
     parser.add_argument("--only", nargs="*", default=None)
     parser.add_argument("--pooled", action="store_true", help="test each strategy on asset pools")
+    parser.add_argument(
+        "--ledger", type=Path, default=None, help="ledger for a pre-registered study"
+    )
+    parser.add_argument("--reports", type=Path, default=REPORTS)
     args = parser.parse_args(argv)
     run_id = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
     instruments = [
         i for i in UNIVERSES[args.universe] if not args.only or i.inst_id.split("-")[0] in args.only
     ]
-    ledger = Ledger()
+    ledger = Ledger(args.ledger) if args.ledger else Ledger()
     timeframes = [Timeframe(t) for t in args.timeframes]
     strategies = [REGISTRY[s] for s in args.strategies]
     if args.pooled:
@@ -103,13 +107,14 @@ def main(argv: list[str] | None = None) -> int:
         candidates = research_pooled(POOLS, timeframes, strategies, load, ledger, run_id)
     else:
         candidates = research(instruments, timeframes, strategies, load, ledger, run_id)
-    REPORTS.mkdir(parents=True, exist_ok=True)
+    reports: Path = args.reports
+    reports.mkdir(parents=True, exist_ok=True)
     n_trials = ledger.oos_trial_count()
-    (REPORTS / f"{run_id}.md").write_text(render(run_id, candidates, n_trials))
-    candidates_frame(candidates).to_csv(REPORTS / f"{run_id}.csv", index=False)
+    (reports / f"{run_id}.md").write_text(render(run_id, candidates, n_trials))
+    candidates_frame(candidates).to_csv(reports / f"{run_id}.csv", index=False)
     accepted = sum(c.accepted for c in candidates)
     print(
-        f"{run_id}: {len(candidates)} candidates, {accepted} accepted, report {REPORTS}/{run_id}.md"
+        f"{run_id}: {len(candidates)} candidates, {accepted} accepted, report {reports}/{run_id}.md"
     )
     return 0
 
