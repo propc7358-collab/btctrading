@@ -25,7 +25,14 @@ def _sync_dukascopy(inst: Instrument, data_dir: Path) -> pd.DataFrame:
     if inst.history_start is None or inst.history_end is None:
         raise ValueError(f"{inst.inst_id} needs history_start and history_end")
     symbol = inst.inst_id.removeprefix("DUKA:")
-    bars = dukascopy.fetch_hourly(symbol, inst.price_scale, inst.history_start, inst.history_end)
+    bars = dukascopy.fetch_hourly(
+        symbol,
+        inst.price_scale,
+        inst.history_start,
+        inst.history_end,
+        progress=lambda line: print(line, flush=True),
+        cache=data_dir / "dukascopy_cache",
+    )
     bars.to_parquet(bars_path(inst, data_dir))
     return bars
 
