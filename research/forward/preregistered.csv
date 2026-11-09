@@ -9,3 +9,4 @@ registered_at,strategy,inst_id,timeframe,params
 2026-11-08T16:00:00Z,ema_trend,MU-USDT-SWAP,1h,"{""fast"": 10, ""min_gap_atr"": 0.5, ""slow"": 50}"
 2026-11-08T16:00:00Z,ema_trend,NVDA-USDT-SWAP,30m,"{""fast"": 20, ""min_gap_atr"": 0.0, ""slow"": 100}"
 2026-11-08T16:00:00Z,donchian_breakout,POOL:energy,4h,"{""entry"": 20, ""exit"": 20}"
+2026-11-09T00:14:49Z,volume_shock_reversal,MU-USDT-SWAP,30m,"{""hold_hours"": 24.0, ""k"": 4.0}"
