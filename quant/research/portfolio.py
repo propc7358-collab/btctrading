@@ -115,8 +115,8 @@ def select(sleeves: Sequence[Sleeve]) -> list[Sleeve]:
 
 
 def _correlation(a: pd.Series, b: pd.Series) -> float:
-    joined = pd.concat([a, b], axis=1).fillna(0.0)
-    value = float(joined.corr().iloc[0, 1])
+    joined = pd.concat([a, b], axis=1).fillna(0.0).to_numpy(dtype=float)
+    value = float(np.corrcoef(joined[:, 0], joined[:, 1])[0, 1])
     return 1.0 if math.isnan(value) else value
 
 
