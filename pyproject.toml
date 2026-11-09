@@ -38,6 +38,7 @@ ignore = ["PD010", "PD013", "RUF001"]
 "quant/**/cli.py" = ["T20"]
 "quant/research/forward.py" = ["T20"]
 "quant/data/store.py" = ["T20"]
+"quant/research/longhist.py" = ["T20"]
 
 [tool.mypy]
 strict = true
