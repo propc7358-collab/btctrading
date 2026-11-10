@@ -40,6 +40,10 @@ window.PORTFOLIO = {
     {
       id: 'H', name: '口袋證券美股',
       note: '截圖個股金額是美元，帳戶合計是台幣；依截圖隱含匯率 32.815 換成台幣（原始美元金額保留）'
+    },
+    {
+      id: 'I', name: '永豐台股',
+      note: '截圖有每檔現值與損益（含息、含稅），本金 = 現值 − 損益'
     }
   ],
 
@@ -89,6 +93,11 @@ window.PORTFOLIO = {
     'Snowflake': { category: '美股', type: '股票', code: 'SNOW', currency: 'USD' },
     'Direxion 台積電 2 倍 ETF': { category: '美股', type: 'ETF', code: 'TSMX', currency: 'USD', note: '2 倍槓桿' },
     'Windtree': { category: '美股', type: '股票', ticker: 'WINT', currency: 'USD', note: 'Yahoo 報價與券商不符，不做每日估算' },
+    // 永豐台股新增
+    '富邦基因免疫生技': { category: '全球', type: 'ETF', code: '00897' },
+    '中信特選金融': { category: '台股', type: 'ETF', code: '00917' },
+    '台新臺灣IC設計': { category: '台股', type: 'ETF', code: '00947' },
+    '凱基台灣TOP50': { category: '台股', type: 'ETF', code: '009816' },
     // 國泰台股新增
     '主動安聯亞半導體': { category: '亞洲', type: 'ETF', code: '00412A' },
     '元大MSCI金融': { category: '台股', type: 'ETF', code: '0055' },
@@ -234,6 +243,23 @@ window.PORTFOLIO = {
         { name: 'Snowflake', shares: 3, avgUSD: 358.19, priceUSD: 291.14, costUSD: 1074.56, valueUSD: 873.42, cost: 35262, value: 28661 },
         { name: 'Direxion 台積電 2 倍 ETF', shares: 70, avgUSD: 82.87, priceUSD: 62.57, costUSD: 5800.93, valueUSD: 4379.9, cost: 190358, value: 143726 },
         { name: 'Windtree', shares: 200, avgUSD: 1.28, priceUSD: 0.11, costUSD: 256.4, valueUSD: 22, cost: 8414, value: 722 }
+      ]
+    },
+    {
+      date: '2026-11-10',
+      account: 'I',
+      // 截圖（2026/11/10 18:45）：庫存總市值 806,326（含息、含稅）、損益 −221,982、總付出成本 1,028,308
+      reported: { value: 806326, cost: 1028308, pnl: -221982 },
+      holdings: [
+        { name: '群益臺灣加權正2', shares: 27000, cost: 338365, value: 265312 },
+        { name: '富邦基因免疫生技', shares: 707, cost: 10368, value: 10537 },
+        { name: '第一金太空衛星', shares: 2000, cost: 159276, value: 107838 },
+        { name: '兆豐台灣晶圓製造', shares: 1500, cost: 75311, value: 61113 },
+        { name: '中信特選金融', shares: 1000, cost: 23473, value: 24012 },
+        { name: '台新臺灣IC設計', shares: 2000, cost: 75642, value: 60534 },
+        { name: '凱基台灣TOP50', shares: 1000, cost: 14710, value: 14805 },
+        { name: '中信台日韓PCB', shares: 6000, cost: 64389, value: 47229 },
+        { name: '主動統一全球創新', shares: 16347, cost: 266774, value: 214946 }
       ]
     }
   ]
