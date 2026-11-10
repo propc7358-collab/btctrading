@@ -48,6 +48,10 @@ window.PORTFOLIO = {
     {
       id: 'J', name: '永豐美股（單筆）',
       note: '截圖金額是美元，依 2026/11/10 匯率 32.907 換成台幣（原始美元金額保留）'
+    },
+    {
+      id: 'K', name: '永豐美股（定存）',
+      note: '豐存股定期定額；截圖金額是美元，依 2026/11/10 匯率 32.907 換成台幣（原始美元金額保留）'
     }
   ],
 
@@ -105,6 +109,7 @@ window.PORTFOLIO = {
     // 永豐美股新增
     'Invesco QQQ': { category: '美股', type: 'ETF', code: 'QQQ', currency: 'USD' },
     'Tesla': { category: '美股', type: '股票', code: 'TSLA', currency: 'USD' },
+    'Roundhill 七巨頭 ETF': { category: '美股', type: 'ETF', code: 'MAGS', currency: 'USD' },
     // 國泰台股新增
     '主動安聯亞半導體': { category: '亞洲', type: 'ETF', code: '00412A' },
     '元大MSCI金融': { category: '台股', type: 'ETF', code: '0055' },
@@ -282,6 +287,18 @@ window.PORTFOLIO = {
         { name: 'VanEck 半導體 ETF', shares: 21, avgUSD: 579.31, priceUSD: 487.41, costUSD: 12165.49, valueUSD: 10235.61, cost: 400330, value: 336823 },
         { name: 'Tesla', shares: 8, avgUSD: 425.09, priceUSD: 378.05, costUSD: 3400.69, valueUSD: 3024.4, cost: 111907, value: 99524 },
         { name: 'Direxion 台積電 2 倍 ETF', shares: 35, avgUSD: 78.57, priceUSD: 62.57, costUSD: 2749.89, valueUSD: 2189.95, cost: 90491, value: 72065 }
+      ]
+    },
+    {
+      date: '2026-11-10',
+      account: 'K',
+      fx: 32.907,
+      // 截圖（2026/11/10 18:47，美元）：4 筆庫存，市值合計 11,632.99、損益 −1,467.88
+      holdings: [
+        { name: 'iShares 軟體 ETF', shares: 7.55142, avgUSD: 105.95, priceUSD: 101.46, costUSD: 800.08, valueUSD: 766.17, cost: 26328, value: 25212, dca: true },
+        { name: 'Roundhill 七巨頭 ETF', shares: 46.6017, avgUSD: 68.67, priceUSD: 69.09, costUSD: 3200.31, valueUSD: 3219.71, cost: 105313, value: 105951, dca: true },
+        { name: 'VanEck 半導體 ETF', shares: 12.93997, avgUSD: 587.35, priceUSD: 487.41, costUSD: 7600.35, valueUSD: 6307.07, cost: 250105, value: 207547, dca: true },
+        { name: 'Tesla', shares: 3.54461, avgUSD: 423.21, priceUSD: 378.05, costUSD: 1500.13, valueUSD: 1340.04, cost: 49365, value: 44097, dca: true }
       ]
     }
   ]
