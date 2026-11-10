@@ -585,9 +585,10 @@
       }
       if (rec.reported) {
         const R = rec.reported, bad = [];
-        if (R.value != null && Math.abs(R.value - shot.value) > 1) bad.push('現值 ' + fmt(R.value));
-        if (R.cost != null && Math.abs(R.cost - shot.cost) > 1) bad.push('本金 ' + fmt(R.cost));
-        if (R.pnl != null && Math.abs(R.pnl - shot.pnl) > 1) bad.push('損益 ' + signed(R.pnl));
+        const off = (x, y) => Math.abs(x - y) > Math.max(1, Math.abs(x) * 0.0002); // 換匯四捨五入的容許誤差
+        if (R.value != null && off(R.value, shot.value)) bad.push('現值 ' + fmt(R.value));
+        if (R.cost != null && off(R.cost, shot.cost)) bad.push('本金 ' + fmt(R.cost));
+        if (R.pnl != null && off(R.pnl, shot.pnl)) bad.push('損益 ' + signed(R.pnl));
         if (bad.length) box.append(el('div', { class: 'warn', text: '⚠ 明細加總和截圖上的帳戶合計不一致（' + bad.join('、') + '）' }));
       }
       const tbody = el('tbody');
@@ -596,7 +597,7 @@
         const rate = h.cost ? pnl / h.cost : 0;
         const meta = D.funds[h.name] || {};
         const nameCell = el('td', null, el('span', { class: 'fund-name', text: h.name }));
-        if (meta.code) nameCell.append(el('span', { class: 'tag', text: meta.code }));
+        if (meta.code || meta.ticker) nameCell.append(el('span', { class: 'tag', text: meta.code || meta.ticker }));
         if (meta.category) nameCell.append(el('span', { class: 'tag', text: meta.category }));
         if (meta.note) nameCell.append(el('span', { class: 'tag', text: meta.note }));
         if (h.dca || planFor(rec.account, h.name)) nameCell.append(el('span', { class: 'tag', text: '定期定額' }));
@@ -609,6 +610,7 @@
           if (h.avgUSD) sub.push('均價 US$' + h.avgUSD.toFixed(2));
           const u = h.priceDate && priceAt('USD:' + meta.code, h.priceDate);
           if (h.est && u) sub.push('收盤 US$' + u.v.toFixed(2));
+          else if (h.priceUSD) sub.push('現價 US$' + h.priceUSD);
         } else if (h.units) sub.push('約 ' + h.units.toFixed(1) + ' 單位 · 淨值 ' + px(h.price));
         if (h.buys) sub.push('截圖後定期定額 ' + h.buys + ' 次');
         if (sub.length) nameCell.append(el('div', { class: 'note', style: 'margin:2px 0 0', text: sub.join(' ') }));

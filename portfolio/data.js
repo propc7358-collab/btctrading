@@ -36,6 +36,10 @@ window.PORTFOLIO = {
     {
       id: 'G', name: '口袋證券台股',
       note: '截圖只有股數與試算損益／報酬率；本金 = 損益 ÷ 報酬率 推算，現值 = 本金 + 損益（已扣預估賣出費用，比庫存總市值略低）'
+    },
+    {
+      id: 'H', name: '口袋證券美股',
+      note: '截圖個股金額是美元，帳戶合計是台幣；依截圖隱含匯率 32.815 換成台幣（原始美元金額保留）'
     }
   ],
 
@@ -75,6 +79,16 @@ window.PORTFOLIO = {
     '南電': { category: '台股', type: '股票', code: '8046' },
     '鴻勁': { category: '台股', type: '股票', code: '7769' },
     '欣興': { category: '台股', type: '股票', code: '3037' },
+    // 口袋證券美股新增
+    'Astera Labs': { category: '美股', type: '股票', code: 'ALAB', currency: 'USD' },
+    'Bloom Energy': { category: '美股', type: '股票', code: 'BE', currency: 'USD' },
+    'Tuttle 光子 ETF': { category: '美股', type: 'ETF', code: 'FOTO', currency: 'USD' },
+    'Marvell': { category: '美股', type: '股票', code: 'MRVL', currency: 'USD' },
+    'Micron': { category: '美股', type: '股票', code: 'MU', currency: 'USD' },
+    'Nebius': { category: '美股', type: '股票', code: 'NBIS', currency: 'USD' },
+    'Snowflake': { category: '美股', type: '股票', code: 'SNOW', currency: 'USD' },
+    'Direxion 台積電 2 倍 ETF': { category: '美股', type: 'ETF', code: 'TSMX', currency: 'USD', note: '2 倍槓桿' },
+    'Windtree': { category: '美股', type: '股票', ticker: 'WINT', currency: 'USD', note: 'Yahoo 報價與券商不符，不做每日估算' },
     // 國泰台股新增
     '主動安聯亞半導體': { category: '亞洲', type: 'ETF', code: '00412A' },
     '元大MSCI金融': { category: '台股', type: 'ETF', code: '0055' },
@@ -200,6 +214,26 @@ window.PORTFOLIO = {
         { name: '南電', shares: 4, cost: 4822, value: 4009, pnl: -813, rate: -16.86, costDerived: true },
         { name: '鴻勁', shares: 4, cost: 29356, value: 16827, pnl: -12529, rate: -42.68, costDerived: true },
         { name: '欣興', shares: 4, cost: 4452, value: 3303, pnl: -1149, rate: -25.81, costDerived: true }
+      ]
+    },
+    {
+      date: '2026-11-10',
+      account: 'H',
+      fx: 32.815,
+      // 截圖（2026/11/10 18:41，最新價為美股 11/09 收盤）：試算總損益約 −270,911 元、庫存總市值約 604,496 元
+      reported: { value: 604496, pnl: -270911 },
+      holdings: [
+        { name: 'Astera Labs', shares: 4, avgUSD: 363.79, priceUSD: 216.87, costUSD: 1455.16, valueUSD: 867.48, cost: 47751, value: 28466 },
+        { name: 'Bloom Energy', shares: 8, avgUSD: 277.98, priceUSD: 193.88, costUSD: 2223.8, valueUSD: 1551.04, cost: 72974, value: 50897 },
+        { name: 'Tuttle 光子 ETF', shares: 150, avgUSD: 26.29, priceUSD: 14.24, costUSD: 3943.91, valueUSD: 2136, cost: 129419, value: 70093 },
+        { name: 'Marvell', shares: 5, avgUSD: 262.57, priceUSD: 154.6, costUSD: 1312.85, valueUSD: 773, cost: 43081, value: 25366 },
+        { name: 'Micron', shares: 2, avgUSD: 1074.59, priceUSD: 733.15, costUSD: 2149.18, valueUSD: 1466.3, cost: 70525, value: 48117 },
+        { name: 'Nebius', shares: 1, avgUSD: 214.4, priceUSD: 141.45, costUSD: 214.4, valueUSD: 141.45, cost: 7036, value: 4642 },
+        { name: 'Rocket Lab', shares: 35, avgUSD: 97.57, priceUSD: 58.86, costUSD: 3414.93, valueUSD: 2060.1, cost: 112061, value: 67602 },
+        { name: 'VanEck 半導體 ETF', shares: 8.5157, avgUSD: 567.3, priceUSD: 487.41, costUSD: 4830.93, valueUSD: 4150.6373, cost: 158527, value: 136203 },
+        { name: 'Snowflake', shares: 3, avgUSD: 358.19, priceUSD: 291.14, costUSD: 1074.56, valueUSD: 873.42, cost: 35262, value: 28661 },
+        { name: 'Direxion 台積電 2 倍 ETF', shares: 70, avgUSD: 82.87, priceUSD: 62.57, costUSD: 5800.93, valueUSD: 4379.9, cost: 190358, value: 143726 },
+        { name: 'Windtree', shares: 200, avgUSD: 1.28, priceUSD: 0.11, costUSD: 256.4, valueUSD: 22, cost: 8414, value: 722 }
       ]
     }
   ]

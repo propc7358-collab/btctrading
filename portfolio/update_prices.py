@@ -72,7 +72,7 @@ def fetch_yahoo(symbol):
     closes = res['indicators']['quote'][0]['close']
     out = {}
     for t, c in zip(res.get('timestamp', []), closes):
-        if c is not None:
+        if c is not None and c > 0:  # Yahoo 對停牌／下市標的會給 0
             out[dt.datetime.fromtimestamp(t + off, dt.timezone.utc).date().isoformat()] = round(float(c), 4)
     return out
 
