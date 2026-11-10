@@ -60,6 +60,10 @@ window.PORTFOLIO = {
     {
       id: 'M', name: '玉山台股',
       note: '截圖有每檔總損益、股數、成交均價與總成本；現值 = 總成本 + 總損益'
+    },
+    {
+      id: 'N', name: '幣託',
+      note: '虛擬資產交易所（冷錢包）；BTC、BNB 每日用 Yahoo 美元價 × 匯率估算，台幣餘額不變'
     }
   ],
 
@@ -142,6 +146,10 @@ window.PORTFOLIO = {
     '藥華藥': { category: '台股', type: '股票', code: '6446' },
     '騰輝電子-KY': { category: '台股', type: '股票', code: '6672' },
     '新代': { category: '台股', type: '股票', code: '7750' },
+    // 幣託（虛擬資產；market: 'crypto' 表示 24 小時交易，估算錨定截圖當天價格）
+    '比特幣':   { category: '加密貨幣', type: '加密貨幣', code: 'BTC-USD', currency: 'USD', market: 'crypto' },
+    '幣安幣':   { category: '加密貨幣', type: '加密貨幣', code: 'BNB-USD', currency: 'USD', market: 'crypto' },
+    '台幣現金': { category: '現金', type: '現金' },
     // 國泰台股新增
     '主動安聯亞半導體': { category: '亞洲', type: 'ETF', code: '00412A' },
     '元大MSCI金融': { category: '台股', type: 'ETF', code: '0055' },
@@ -380,6 +388,17 @@ window.PORTFOLIO = {
         { name: '騰輝電子-KY', shares: 55, cost: 29632, value: 27489 },
         { name: '新代', shares: 2, cost: 4005, value: 3007 },
         { name: '南電', shares: 15, cost: 20905, value: 15010, costDerived: true }
+      ]
+    },
+    {
+      date: '2026-11-10',
+      account: 'N',
+      // 截圖（2026/11/10 19:19）：可用約 110,454（明細加總 110,443，差 11 元應是報價刷新）
+      reported: { value: 110454 },
+      holdings: [
+        { name: '台幣現金', value: 2238, cost: 2238 },
+        { name: '比特幣', shares: 0.04132273, avgTWD: 2417235, cost: 99887, value: 101240 },
+        { name: '幣安幣', shares: 0.3061382, avgTWD: 24543.3, cost: 7514, value: 6965 }
       ]
     }
   ]

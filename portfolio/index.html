@@ -410,7 +410,9 @@
     if (isUSD) {
       // 美股：錨定 = 截圖日前一個美股收盤 × 截圖日匯率；之後 = 當天美股收盤 × 當天匯率
       const code = (D.funds[h.name] || {}).code;
-      const u0 = priceBefore('USD:' + code, rec.date), f0 = priceAt('FX:USDTWD', rec.date);
+      // 虛擬貨幣 24 小時交易：錨定截圖當天價格；美股錨定截圖日前一個收盤
+      const crypto = (D.funds[h.name] || {}).market === 'crypto';
+      const u0 = crypto ? priceAt('USD:' + code, rec.date) : priceBefore('USD:' + code, rec.date), f0 = priceAt('FX:USDTWD', rec.date);
       const u = priceAt('USD:' + code, day), f = priceAt('FX:USDTWD', day);
       if (!u0 || !f0 || !u || !f || (u.d <= u0.d && f.d <= f0.d)) return base;
       const units = h.value / (u0.v * f0.v);
@@ -606,8 +608,9 @@
         if (h.shares) { sub.push(fmt(h.shares) + ' 股'); if (h.price) sub.push('@ ' + px(h.price)); }
         if (meta.currency === 'USD') {
           sub.length = 0;
-          sub.push(h.shares + ' 股');
+          sub.push(h.shares + (meta.market === 'crypto' ? ' 顆' : ' 股'));
           if (h.avgUSD) sub.push('均價 US$' + h.avgUSD.toFixed(2));
+          if (h.avgTWD) sub.push('均價 ' + nf.format(h.avgTWD) + ' 元');
           const u = h.priceDate && priceAt('USD:' + meta.code, h.priceDate);
           if (h.est && u) sub.push('收盤 US$' + u.v.toFixed(2));
           else if (h.priceUSD) sub.push('現價 US$' + h.priceUSD);
