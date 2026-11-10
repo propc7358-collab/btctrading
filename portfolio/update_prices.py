@@ -12,6 +12,7 @@ import datetime as dt
 import json
 import subprocess
 import sys
+import time
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -65,9 +66,17 @@ def fetch_fund_navs(cnyes_id):
     return out
 
 
-def fetch_yahoo(symbol):
+def fetch_yahoo(symbol, tries=4):
     url = f'https://query1.finance.yahoo.com/v8/finance/chart/{urllib.parse.quote(symbol)}?range=1mo&interval=1d'
-    res = get_json(url)['chart']['result'][0]
+    for i in range(tries):
+        try:
+            time.sleep(0.6)  # Yahoo 連續請求太快會回 401／429
+            res = get_json(url)['chart']['result'][0]
+            break
+        except Exception:  # noqa: BLE001
+            if i == tries - 1:
+                raise
+            time.sleep(3 * (i + 1))
     off = res['meta'].get('gmtoffset', 0)
     closes = res['indicators']['quote'][0]['close']
     out = {}
