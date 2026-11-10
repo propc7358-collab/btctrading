@@ -25,6 +25,12 @@
    - `node -e "global.window={};require('./portfolio/data.js');console.log('ok')"` 能執行。
    - 合計和截圖一致。
 6. **commit 並 push。**
+7. **重新發布 claude.ai 網頁**（網址不變）：
+   - 先執行 `python3 portfolio/build_artifact.py <scratchpad>/artifact`。
+   - 再用 Artifact 工具 publish：
+     - `file_path` 是 `<scratchpad>/artifact/index.html`
+     - `files` 是 `{"data.js": "<scratchpad>/artifact/data.js"}`
+   - 不同的對話裡要另外帶 `url: https://claude.ai/artifact/Dwqpy3WYGDKyEPf5ScjntG`，並且先用 `action: "read"` 讀一次。
 
 ## 回報給使用者
 
@@ -38,6 +44,11 @@
   - 淨值變動 = 本次現值 − 上次現值 − 本金變化
   - 淨值變動率 = 淨值變動 ÷ 上次現值
 - 截圖看不清、或本金是推算出來的地方，要明白說。
+
+## 帳戶對照
+
+- `A` = LINE Bank 基金
+- `B` = 國泰基金
 
 ## 注意
 
