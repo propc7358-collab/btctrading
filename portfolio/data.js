@@ -9,7 +9,8 @@ window.PORTFOLIO = {
   // 借款（負債）。collateral 的 name 要和 funds 一致，頁面會用每日價格算擔保維持率
   loans: [
     {
-      id: 'L1', name: '玉山不限用途借貸 #1', date: '2026-04-27', amount: 1090000, rate: 3.0, account: 'O',
+      id: 'L1', name: '玉山不限用途借貸 #1', date: '2026-04-27', amount: 1090000, rate: 4.25, account: 'O',
+      // 核准畫面寫 3%，使用者說明目前利率是 4.25%
       collateral: [
         { name: '主動統一台股增長', shares: 19000 },
         { name: '主動統一全球創新', shares: 28000 },
