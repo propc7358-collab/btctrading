@@ -89,6 +89,10 @@ window.PORTFOLIO = {
     {
       id: 'O', name: '玉山質押股票',
       note: '不限用途款項借貸的擔保品（不在玉山台股庫存裡）；成本未知，暫以現值計'
+    },
+    {
+      id: 'P', name: 'MaiCoin',
+      note: '虛擬資產交易所；BTC 每日用 Yahoo 美元價 × 匯率估算，台幣餘額不變（美元餘額 0）'
     }
   ],
 
@@ -436,6 +440,15 @@ window.PORTFOLIO = {
         { name: '主動復華未來50', shares: 54000, price: 14.42, cost: 776792, value: 776792, costUnknown: true },
         { name: '主動統一台股增長', shares: 19000, price: 24.27, cost: 460012, value: 460012, costUnknown: true },
         { name: '主動群益科技創新', shares: 20000, price: 14.42, cost: 287701, value: 287701, costUnknown: true }
+      ]
+    },
+    {
+      date: '2026-11-10',
+      account: 'P',
+      // 截圖（2026/11/10 約 21:00）：TWD 2,600、USD 0、BTC 0.00285154（約 NT$6,988，即時報酬 −7.76%／約 −588）
+      holdings: [
+        { name: '台幣現金', value: 2600, cost: 2600 },
+        { name: '比特幣', shares: 0.00285154, avgTWD: 2656847, cost: 7576, value: 6988 }
       ]
     }
   ]
