@@ -8,7 +8,14 @@ window.PORTFOLIO = {
 
   // 帳戶：使用者上傳截圖時說明是哪個帳戶
   accounts: [
-    { id: 'A', name: 'LINE Bank 基金', note: '有 1 筆定期定額（尚未確認是哪一檔）' },
+    {
+      id: 'A', name: 'LINE Bank 基金',
+      // 定期定額設定（2026/11/10 截圖）
+      plans: [
+        { fund: '施羅德台灣樂活中小基金-A類型', frequency: '每週', day: '週一', amount: 1000,
+          start: '2026-08-03', next: '2026-11-16', count: 14, status: '正常扣款', asOf: '2026-11-10' }
+      ]
+    },
     { id: 'B', name: '國泰銀行基金' }
   ],
 

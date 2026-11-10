@@ -345,6 +345,7 @@
     return (r <= 1 ? 1 : r <= 2 ? 2 : r <= 2.5 ? 2.5 : r <= 5 ? 5 : 10) * mag;
   }
   const accName = (id) => (D.accounts.find((a) => a.id === id) || { name: id }).name;
+  const planFor = (accountId, fund) => ((D.accounts.find((a) => a.id === accountId) || {}).plans || []).find((p) => p.fund === fund && p.status !== '終止');
   const sum = (list, k) => list.reduce((s, h) => s + (+h[k] || 0), 0);
   function totals(list) {
     const value = sum(list, 'value'), cost = sum(list, 'cost');
@@ -379,7 +380,7 @@
       const p = pm.get(name);
       if (!p) { out.changes.push('新增 ' + name + '（' + fmt(h.cost) + '）'); out.flow += h.cost; continue; }
       const dc = h.cost - p.cost;
-      if (Math.abs(dc) >= 1) { out.changes.push((dc > 0 ? '加碼 ' : '減碼 ') + name + ' ' + signed(dc)); }
+      if (Math.abs(dc) >= 1) { out.changes.push((dc > 0 ? (planFor(cur.account, name) ? '定期定額 ' : '加碼 ') : '減碼 ') + name + ' ' + signed(dc)); }
       out.flow += dc; pv += p.value; cv += h.value;
     }
     for (const [name, p] of pm) if (!cm.has(name)) { out.changes.push('出清 ' + name); out.flow -= p.cost; }
@@ -488,6 +489,13 @@
         acc.note ? el('span', { class: 'meta', text: '· ' + acc.note }) : null
       );
       const box = el('div', { class: 'platform' }, head);
+      for (const p of acc.plans || []) {
+        const bits = ['定期定額 ' + p.fund, (p.frequency === '每週' && /^週/.test(p.day || '') ? '每' + p.day : (p.frequency || '') + (p.day ? ' ' + p.day : '')) + ' 扣 ' + fmt(p.amount) + ' 元'];
+        if (p.count != null) bits.push('已扣 ' + p.count + ' 次');
+        if (p.next) bits.push('下次 ' + sl(p.next));
+        if (p.status) bits.push(p.status);
+        box.append(el('div', { class: 'meta', style: 'color:var(--ink-2);font-size:13px;margin:0 0 4px' }, el('span', { class: 'pill', text: '定期定額' }), document.createTextNode(' ' + bits.slice(0).join(' · ').replace(/^定期定額 /, ''))));
+      }
       if (rec.reported) {
         const dv = Math.abs(rec.reported.value - t.value), dc = rec.reported.cost != null ? Math.abs(rec.reported.cost - t.cost) : 0;
         if (dv > 1 || dc > 1) box.append(el('div', { class: 'warn', text: '⚠ 明細加總和截圖上的帳戶合計不一致（現值 ' + fmt(rec.reported.value) + (rec.reported.cost != null ? '、本金 ' + fmt(rec.reported.cost) : '') + '）' }));
@@ -499,7 +507,7 @@
         const nameCell = el('td', null, el('span', { class: 'fund-name', text: h.name }));
         const cat = (D.funds[h.name] || {}).category;
         if (cat) nameCell.append(el('span', { class: 'tag', text: cat }));
-        if (h.dca) nameCell.append(el('span', { class: 'tag', text: '定期定額' }));
+        if (h.dca || planFor(rec.account, h.name)) nameCell.append(el('span', { class: 'tag', text: '定期定額' }));
         const nc = holdingNavChange(rec, h);
         const ncCell = el('td', { class: 'num', 'data-label': '較上次' });
         if (!nc) ncCell.textContent = '—';
