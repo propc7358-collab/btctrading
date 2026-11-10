@@ -355,8 +355,7 @@ window.PORTFOLIO = {
     {
       date: '2026-11-10',
       account: 'M',
-      // 截圖（2026/11/10 19:06）：共 30 檔，使用者確認南電是最後一檔、穩懋與景碩之間沒有漏；
-      // 南電的總成本被截掉，用 股數 × 均價 1,391.67 + 買進手續費 推算
+      // 截圖（2026/11/10 19:06、19:20）：共 30 檔，南電是最後一檔、穩懋與景碩之間沒有漏
       holdings: [
         { name: '群益臺灣加權正2', shares: 20000, cost: 252057, value: 196524 },
         { name: '國泰費城半導體', shares: 800, cost: 0, value: 58100, note: '截圖成本與均價都是 0（可能是匯入或贈與的股票），損益等於現值' },
@@ -387,7 +386,7 @@ window.PORTFOLIO = {
         { name: '藥華藥', shares: 25, cost: 31223, value: 31860 },
         { name: '騰輝電子-KY', shares: 55, cost: 29632, value: 27489 },
         { name: '新代', shares: 2, cost: 4005, value: 3007 },
-        { name: '南電', shares: 15, cost: 20905, value: 15010, costDerived: true }
+        { name: '南電', shares: 15, cost: 20904, value: 15009 }
       ]
     },
     {
