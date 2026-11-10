@@ -166,6 +166,18 @@
 
   .note { color: var(--muted); font-size: 12px; margin-top: 8px; }
   .warn { color: var(--danger); font-size: 12px; margin: 2px 0 6px; }
+  .tabs { display: flex; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; padding-bottom: 2px; }
+  .tab { flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-start; gap: 1px; text-align: left; border-radius: 10px; padding: 7px 12px; }
+  .tab .tab-name { font-weight: 600; font-size: 14px; }
+  .tab .tab-sub { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .tabs-group { margin-bottom: 10px; }
+  .tabs-group .tab[aria-selected="true"] { background: var(--accent); border-color: transparent; color: var(--accent-ink); }
+  .tabs-group .tab[aria-selected="true"] .tab-sub { color: var(--accent-ink); opacity: .85; }
+  .tabs-acc { border-bottom: 1px solid var(--grid); gap: 2px; margin-bottom: 12px; }
+  .tabs-acc .tab { background: transparent; border: none; border-bottom: 2px solid transparent; border-radius: 0; padding: 6px 10px 8px; }
+  .tabs-acc .tab:hover { background: var(--surface-2); }
+  .tabs-acc .tab[aria-selected="true"] { border-bottom-color: var(--accent); }
+  .tabs-acc .tab[aria-selected="true"] .tab-name { color: var(--accent); }
   .status { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
   .status.ok { color: var(--down); background: color-mix(in srgb, var(--down) 12%, transparent); }
   .status.watch { color: var(--watch); background: color-mix(in srgb, #fab219 22%, transparent); }
@@ -633,96 +645,144 @@
     $('loanMeta').textContent = loans.length + ' 筆 · 價格日 ' + sl(day);
   }
 
-  function renderAccounts() {
+  // 持有明細：第一排選群組（台股／美股…），第二排選帳戶，一次顯示一個帳戶
+  const GROUP_ORDER = ['台股', '美股', '基金', '虛擬資產', '質押', '其他'];
+  const groupOf = (id) => (D.accounts.find((a) => a.id === id) || {}).group || '其他';
+  const pref = (k, v) => {
+    try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { /* 無痕或封鎖時略過 */ }
+    return null;
+  };
+  function tabList(label, items, selected, onPick, cls) {
+    const bar = el('div', { class: 'tabs ' + cls, role: 'tablist', 'aria-label': label });
+    const btns = items.map((it, i) => {
+      const b = el('button', { type: 'button', role: 'tab', class: 'tab', 'aria-selected': String(it.key === selected), tabindex: it.key === selected ? '0' : '-1' },
+        el('span', { class: 'tab-name', text: it.name }), el('span', { class: 'tab-sub', text: it.sub }));
+      b.addEventListener('click', () => onPick(it.key));
+      b.addEventListener('keydown', (e) => {
+        const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (!d) return;
+        e.preventDefault();
+        const n = items[(i + d + items.length) % items.length];
+        onPick(n.key, true);
+      });
+      return b;
+    });
+    bar.append(...btns);
+    return bar;
+  }
+  function renderAccounts(focusSel) {
     const host = $('accounts');
     host.replaceChildren();
     if (!currentRecords.length) { host.append(el('div', { class: 'empty', text: '尚無紀錄' })); return; }
-    for (const rec of currentRecords) {
-      const acc = D.accounts.find((a) => a.id === rec.account) || {};
-      const shot = totals(rec.holdings);
-      const list = currentHoldings.filter((h) => h.account === rec.account);
-      const t = totals(list);
-      const estDate = list.filter((h) => h.est).map((h) => h.priceDate).sort().pop();
-      const head = el('div', { class: 'platform-title' },
-        el('strong', { text: acc.name || rec.account }),
-        el('span', { class: 'meta', text: '· ' + rec.holdings.length + ' 檔 · 截圖 ' + sl(rec.date) + (estDate ? ' · 估算至 ' + sl(estDate) : '') }),
-        acc.note ? el('span', { class: 'meta', text: '· ' + acc.note }) : null
-      );
-      const box = el('div', { class: 'platform' }, head);
-      for (const p of acc.plans || []) {
-        const bits = ['定期定額 ' + p.fund, (p.frequency === '每週' && /^週/.test(p.day || '') ? '每' + p.day : (p.frequency || '') + (p.day ? ' ' + p.day : '')) + ' 扣 ' + fmt(p.amount) + ' 元'];
-        if (p.count != null) bits.push('已扣 ' + p.count + ' 次');
-        if (p.next) bits.push('下次 ' + sl(p.next));
-        if (p.status) bits.push(p.status);
-        box.append(el('div', { class: 'meta', style: 'color:var(--ink-2);font-size:13px;margin:0 0 4px' }, el('span', { class: 'pill', text: '定期定額' }), document.createTextNode(' ' + bits.slice(0).join(' · ').replace(/^定期定額 /, ''))));
-      }
-      if (rec.reported) {
-        const R = rec.reported, bad = [];
-        const off = (x, y) => Math.abs(x - y) > Math.max(1, Math.abs(x) * 0.0002); // 換匯四捨五入的容許誤差
-        if (R.value != null && off(R.value, shot.value)) bad.push('現值 ' + fmt(R.value));
-        if (R.cost != null && off(R.cost, shot.cost)) bad.push('本金 ' + fmt(R.cost));
-        if (R.pnl != null && off(R.pnl, shot.pnl)) bad.push('損益 ' + signed(R.pnl));
-        if (bad.length) box.append(el('div', { class: 'warn', text: '⚠ 明細加總和截圖上的帳戶合計不一致（' + bad.join('、') + '）' }));
-      }
-      const tbody = el('tbody');
-      for (const h of list) {
-        const pnl = h.value - h.cost;
-        const rate = h.cost ? pnl / h.cost : 0;
-        const meta = D.funds[h.name] || {};
-        const nameCell = el('td', null, el('span', { class: 'fund-name', text: h.name }));
-        if (meta.code || meta.ticker) nameCell.append(el('span', { class: 'tag', text: meta.code || meta.ticker }));
-        if (meta.category) nameCell.append(el('span', { class: 'tag', text: meta.category }));
-        if (meta.note) nameCell.append(el('span', { class: 'tag', text: meta.note }));
-        if (h.dca || planFor(rec.account, h.name)) nameCell.append(el('span', { class: 'tag', text: '定期定額' }));
-        if (h.costUnknown) nameCell.append(el('span', { class: 'tag', text: '成本未知' }));
-        const sub = [];
-        const px = (v) => (v >= 1000 ? nf.format(v) : v.toFixed(2));
-        if (h.shares) { sub.push(fmt(h.shares) + ' 股'); if (h.price) sub.push('@ ' + px(h.price)); }
-        if (meta.currency === 'USD') {
-          sub.length = 0;
-          sub.push(h.shares + (meta.market === 'crypto' ? ' 顆' : ' 股'));
-          if (h.avgUSD) sub.push('均價 US$' + h.avgUSD.toFixed(2));
-          if (h.avgTWD) sub.push('均價 ' + nf.format(h.avgTWD) + ' 元');
-          const u = h.priceDate && priceAt('USD:' + meta.code, h.priceDate);
-          if (h.est && u) sub.push('收盤 US$' + u.v.toFixed(2));
-          else if (h.priceUSD) sub.push('現價 US$' + h.priceUSD);
-        } else if (h.units) sub.push('約 ' + h.units.toFixed(1) + ' 單位 · 淨值 ' + px(h.price));
-        if (h.buys) sub.push('截圖後定期定額 ' + h.buys + ' 次');
-        if (sub.length) nameCell.append(el('div', { class: 'note', style: 'margin:2px 0 0', text: sub.join(' ') }));
-        const nc = holdingChange(h);
-        const ncCell = el('td', { class: 'num', 'data-label': '較前日' });
-        if (!nc) ncCell.textContent = '—';
-        else if (nc.isNew) ncCell.textContent = '新';
-        else { ncCell.textContent = pct(nc.rate); ncCell.className += ' ' + toneR(nc.rate); ncCell.title = '對比 ' + sl(nc.since); }
-        tbody.append(el('tr', null,
-          nameCell,
-          el('td', { class: 'num', 'data-label': h.est ? '估算現值' : '參考現值', text: fmt(h.value), title: h.est ? '估算（' + sl(h.priceDate) + ' 價格）' : '截圖數字' }),
-          el('td', { class: 'num hide-sm', text: h.costUnknown ? '未知' : fmt(h.cost) + (h.costDerived ? '*' : '') }),
-          el('td', { class: 'num ' + (h.costUnknown ? '' : tone(pnl)), 'data-label': '損益', text: h.costUnknown ? '—' : signed(pnl) }),
-          el('td', { class: 'num ' + (h.costUnknown ? '' : tone(pnl)), 'data-label': '報酬率', text: h.costUnknown ? '—' : pct(rate) }),
-          ncCell,
-          el('td', { class: 'num hide-sm', text: h.priceDate ? h.priceDate.slice(5).replace('-', '/') : '—' })
-        ));
-      }
-      const tfoot = el('tfoot', null, el('tr', null,
-        el('td', { text: '小計' }),
-        el('td', { class: 'num', 'data-label': '參考現值', text: fmt(t.value) }),
-        el('td', { class: 'num hide-sm', text: fmt(t.cost) }),
-        el('td', { class: 'num ' + tone(t.pnl), 'data-label': '損益', text: signed(t.pnl) }),
-        el('td', { class: 'num ' + tone(t.pnl), 'data-label': '報酬率', text: pct(t.rate) }),
-        el('td'), el('td', { class: 'hide-sm' })
-      ));
-      const table = el('table', { class: 'holdings' },
-        el('thead', null, el('tr', null,
-          el('th', { text: '標的' }), el('th', { class: 'num', text: estDate ? '估算現值' : '參考現值' }), el('th', { class: 'num hide-sm', text: '本金' }),
-          el('th', { class: 'num', text: '損益' }), el('th', { class: 'num', text: '報酬率' }), el('th', { class: 'num', text: '較前日' }), el('th', { class: 'num hide-sm', text: '價格日' })
-        )),
-        tbody, tfoot
-      );
-      box.append(el('div', { class: 'table-wrap' }, table));
-      if (rec.holdings.some((h) => h.costDerived)) box.append(el('div', { class: 'note', style: 'margin-top:4px', text: '* 截圖沒有直接顯示本金，由報酬率推算（現值 ÷ (1 + 報酬率)，或損益 ÷ 報酬率）。' }));
-      host.append(box);
+    const groups = GROUP_ORDER.map((g) => ({ g, recs: currentRecords.filter((r) => groupOf(r.account) === g) })).filter((x) => x.recs.length);
+    let selG = pref('holdGroup');
+    if (!groups.some((x) => x.g === selG)) selG = groups[0].g;
+    const recs = groups.find((x) => x.g === selG).recs;
+    let selA = pref('holdAcc:' + selG);
+    if (!recs.some((r) => r.account === selA)) selA = recs[0].account;
+    const sum = (ids) => totals(currentHoldings.filter((h) => ids.includes(h.account)));
+    const gBar = tabList('帳戶類別', groups.map((x) => {
+      const t = sum(x.recs.map((r) => r.account));
+      return { key: x.g, name: x.g, sub: x.recs.length + ' 個帳戶 · ' + compactTWD(t.value) };
+    }), selG, (k, kb) => { pref('holdGroup', k); renderAccounts(kb ? 'group' : null); }, 'tabs-group');
+    const aBar = tabList(selG + '帳戶', recs.map((r) => {
+      const t = sum([r.account]);
+      return { key: r.account, name: accName(r.account), sub: fmt(t.value) + ' · ' + pct(t.rate, 1) };
+    }), selA, (k, kb) => { pref('holdAcc:' + selG, k); renderAccounts(kb ? 'acc' : null); }, 'tabs-acc');
+    const panel = el('div', { role: 'tabpanel', class: 'tab-panel' });
+    panel.append(buildAccountBox(recs.find((r) => r.account === selA)));
+    host.append(gBar, aBar, panel);
+    if (focusSel) {
+      const bar = focusSel === 'group' ? gBar : aBar;
+      const b = bar.querySelector('[aria-selected="true"]'); if (b) b.focus();
     }
+  }
+
+  function buildAccountBox(rec) {
+    const acc = D.accounts.find((a) => a.id === rec.account) || {};
+    const shot = totals(rec.holdings);
+    const list = currentHoldings.filter((h) => h.account === rec.account);
+    const t = totals(list);
+    const estDate = list.filter((h) => h.est).map((h) => h.priceDate).sort().pop();
+    const head = el('div', { class: 'platform-title' },
+      el('strong', { text: acc.name || rec.account }),
+      el('span', { class: 'meta', text: '· ' + rec.holdings.length + ' 檔 · 截圖 ' + sl(rec.date) + (estDate ? ' · 估算至 ' + sl(estDate) : '') }),
+      acc.note ? el('span', { class: 'meta', text: '· ' + acc.note }) : null
+    );
+    const box = el('div', { class: 'platform' }, head);
+    for (const p of acc.plans || []) {
+      const bits = ['定期定額 ' + p.fund, (p.frequency === '每週' && /^週/.test(p.day || '') ? '每' + p.day : (p.frequency || '') + (p.day ? ' ' + p.day : '')) + ' 扣 ' + fmt(p.amount) + ' 元'];
+      if (p.count != null) bits.push('已扣 ' + p.count + ' 次');
+      if (p.next) bits.push('下次 ' + sl(p.next));
+      if (p.status) bits.push(p.status);
+      box.append(el('div', { class: 'meta', style: 'color:var(--ink-2);font-size:13px;margin:0 0 4px' }, el('span', { class: 'pill', text: '定期定額' }), document.createTextNode(' ' + bits.slice(0).join(' · ').replace(/^定期定額 /, ''))));
+    }
+    if (rec.reported) {
+      const R = rec.reported, bad = [];
+      const off = (x, y) => Math.abs(x - y) > Math.max(1, Math.abs(x) * 0.0002); // 換匯四捨五入的容許誤差
+      if (R.value != null && off(R.value, shot.value)) bad.push('現值 ' + fmt(R.value));
+      if (R.cost != null && off(R.cost, shot.cost)) bad.push('本金 ' + fmt(R.cost));
+      if (R.pnl != null && off(R.pnl, shot.pnl)) bad.push('損益 ' + signed(R.pnl));
+      if (bad.length) box.append(el('div', { class: 'warn', text: '⚠ 明細加總和截圖上的帳戶合計不一致（' + bad.join('、') + '）' }));
+    }
+    const tbody = el('tbody');
+    for (const h of list) {
+      const pnl = h.value - h.cost;
+      const rate = h.cost ? pnl / h.cost : 0;
+      const meta = D.funds[h.name] || {};
+      const nameCell = el('td', null, el('span', { class: 'fund-name', text: h.name }));
+      if (meta.code || meta.ticker) nameCell.append(el('span', { class: 'tag', text: meta.code || meta.ticker }));
+      if (meta.category) nameCell.append(el('span', { class: 'tag', text: meta.category }));
+      if (meta.note) nameCell.append(el('span', { class: 'tag', text: meta.note }));
+      if (h.dca || planFor(rec.account, h.name)) nameCell.append(el('span', { class: 'tag', text: '定期定額' }));
+      if (h.costUnknown) nameCell.append(el('span', { class: 'tag', text: '成本未知' }));
+      const sub = [];
+      const px = (v) => (v >= 1000 ? nf.format(v) : v.toFixed(2));
+      if (h.shares) { sub.push(fmt(h.shares) + ' 股'); if (h.price) sub.push('@ ' + px(h.price)); }
+      if (meta.currency === 'USD') {
+        sub.length = 0;
+        sub.push(h.shares + (meta.market === 'crypto' ? ' 顆' : ' 股'));
+        if (h.avgUSD) sub.push('均價 US$' + h.avgUSD.toFixed(2));
+        if (h.avgTWD) sub.push('均價 ' + nf.format(h.avgTWD) + ' 元');
+        const u = h.priceDate && priceAt('USD:' + meta.code, h.priceDate);
+        if (h.est && u) sub.push('收盤 US$' + u.v.toFixed(2));
+        else if (h.priceUSD) sub.push('現價 US$' + h.priceUSD);
+      } else if (h.units) sub.push('約 ' + h.units.toFixed(1) + ' 單位 · 淨值 ' + px(h.price));
+      if (h.buys) sub.push('截圖後定期定額 ' + h.buys + ' 次');
+      if (sub.length) nameCell.append(el('div', { class: 'note', style: 'margin:2px 0 0', text: sub.join(' ') }));
+      const nc = holdingChange(h);
+      const ncCell = el('td', { class: 'num', 'data-label': '較前日' });
+      if (!nc) ncCell.textContent = '—';
+      else if (nc.isNew) ncCell.textContent = '新';
+      else { ncCell.textContent = pct(nc.rate); ncCell.className += ' ' + toneR(nc.rate); ncCell.title = '對比 ' + sl(nc.since); }
+      tbody.append(el('tr', null,
+        nameCell,
+        el('td', { class: 'num', 'data-label': h.est ? '估算現值' : '參考現值', text: fmt(h.value), title: h.est ? '估算（' + sl(h.priceDate) + ' 價格）' : '截圖數字' }),
+        el('td', { class: 'num hide-sm', text: h.costUnknown ? '未知' : fmt(h.cost) + (h.costDerived ? '*' : '') }),
+        el('td', { class: 'num ' + (h.costUnknown ? '' : tone(pnl)), 'data-label': '損益', text: h.costUnknown ? '—' : signed(pnl) }),
+        el('td', { class: 'num ' + (h.costUnknown ? '' : tone(pnl)), 'data-label': '報酬率', text: h.costUnknown ? '—' : pct(rate) }),
+        ncCell,
+        el('td', { class: 'num hide-sm', text: h.priceDate ? h.priceDate.slice(5).replace('-', '/') : '—' })
+      ));
+    }
+    const tfoot = el('tfoot', null, el('tr', null,
+      el('td', { text: '小計' }),
+      el('td', { class: 'num', 'data-label': '參考現值', text: fmt(t.value) }),
+      el('td', { class: 'num hide-sm', text: fmt(t.cost) }),
+      el('td', { class: 'num ' + tone(t.pnl), 'data-label': '損益', text: signed(t.pnl) }),
+      el('td', { class: 'num ' + tone(t.pnl), 'data-label': '報酬率', text: pct(t.rate) }),
+      el('td'), el('td', { class: 'hide-sm' })
+    ));
+    const table = el('table', { class: 'holdings' },
+      el('thead', null, el('tr', null,
+        el('th', { text: '標的' }), el('th', { class: 'num', text: estDate ? '估算現值' : '參考現值' }), el('th', { class: 'num hide-sm', text: '本金' }),
+        el('th', { class: 'num', text: '損益' }), el('th', { class: 'num', text: '報酬率' }), el('th', { class: 'num', text: '較前日' }), el('th', { class: 'num hide-sm', text: '價格日' })
+      )),
+      tbody, tfoot
+    );
+    box.append(el('div', { class: 'table-wrap' }, table));
+    if (rec.holdings.some((h) => h.costDerived)) box.append(el('div', { class: 'note', style: 'margin-top:4px', text: '* 截圖沒有直接顯示本金，由報酬率推算（現值 ÷ (1 + 報酬率)，或損益 ÷ 報酬率）。' }));
+    return box;
   }
 
   function aggregateByFund() {
