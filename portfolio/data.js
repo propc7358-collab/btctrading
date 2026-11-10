@@ -28,6 +28,10 @@ window.PORTFOLIO = {
     {
       id: 'E', name: '國泰美股（台幣）',
       note: '複委託台幣交割；金額都是台幣。本金由損益 ÷ 報酬率推算（SpaceX 用總成本扣掉其他檔）'
+    },
+    {
+      id: 'F', name: '國泰美股（美金）',
+      note: '複委託美金交割；截圖金額是美元，依 2026/11/10 匯率 32.907 換成台幣（原始美元金額保留在 costUSD／valueUSD）'
     }
   ],
 
@@ -56,6 +60,11 @@ window.PORTFOLIO = {
     'Rocket Lab': { category: '美股', type: '股票', code: 'RKLB', currency: 'USD' },
     'VanEck 半導體 ETF': { category: '美股', type: 'ETF', code: 'SMH', currency: 'USD' },
     'SpaceX': { category: '美股', type: '股票', code: 'SPCX', currency: 'USD' },
+    'Roundhill Memory ETF': { category: '美股', type: 'ETF', code: 'DRAM', currency: 'USD' },
+    'VanEck 金礦 ETF': { category: '美股', type: 'ETF', code: 'GDX', currency: 'USD' },
+    'Alphabet A': { category: '美股', type: '股票', code: 'GOOGL', currency: 'USD' },
+    'iShares 軟體 ETF': { category: '美股', type: 'ETF', code: 'IGV', currency: 'USD' },
+    'Tema 太空 ETF': { category: '美股', type: 'ETF', code: 'NASA', currency: 'USD' },
     // 國泰台股新增
     '主動安聯亞半導體': { category: '亞洲', type: 'ETF', code: '00412A' },
     '元大MSCI金融': { category: '台股', type: 'ETF', code: '0055' },
@@ -148,6 +157,21 @@ window.PORTFOLIO = {
         { name: 'Rocket Lab', shares: 32, avgUSD: 92.883438, cost: 94785, value: 58378, pnl: -36407, rate: -38.41, costDerived: true },
         { name: 'VanEck 半導體 ETF', shares: 7.66629, avgUSD: 552.938905, cost: 136808, value: 122320, pnl: -14488, rate: -10.59, costDerived: true, dca: true },
         { name: 'SpaceX', shares: 42, avgUSD: 145.006429, cost: 195200, value: 194972, pnl: -228, rate: -0.12, costDerived: true }
+      ]
+    },
+    {
+      date: '2026-11-10',
+      account: 'F',
+      fx: 32.907,
+      // 截圖（美元）：總預估現值 16,157.73、總成本 21,114.67、總預估損益 −4,956.94
+      reportedUSD: { value: 16157.73, cost: 21114.67, pnl: -4956.94 },
+      holdings: [
+        { name: 'Roundhill Memory ETF', shares: 49, avgUSD: 69.120408, costUSD: 3386.9, valueUSD: 2025.17, cost: 111453, value: 66642 },
+        { name: 'VanEck 金礦 ETF', shares: 25, avgUSD: 115.4248, costUSD: 2885.62, valueUSD: 2237.5, cost: 94957, value: 73629 },
+        { name: 'Alphabet A', shares: 10, avgUSD: 336.097, costUSD: 3360.97, valueUSD: 2903.5, cost: 110599, value: 95545 },
+        { name: 'iShares 軟體 ETF', shares: 5, avgUSD: 101.24, costUSD: 506.2, valueUSD: 505.3, cost: 16658, value: 16628 },
+        { name: 'Tema 太空 ETF', shares: 100, avgUSD: 33.9105, costUSD: 3391.05, valueUSD: 2094.0, cost: 111589, value: 68907 },
+        { name: 'VanEck 半導體 ETF', shares: 13.14333, avgUSD: 577.017392, costUSD: 7583.93, valueUSD: 6392.26, cost: 249564, value: 210350, dca: true }
       ]
     }
   ]

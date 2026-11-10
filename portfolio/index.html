@@ -393,19 +393,28 @@
   //   股票／ETF：股數 × 收盤價 × （截圖現值 ÷ 截圖市值，保留券商扣費口徑）
   //   基金：單位數 = 截圖現值 ÷ 錨定淨值（截圖的淨值日，沒有就用截圖日前一個淨值日）
   //         每週定期定額：每個扣款日以當天（或之後第一個）淨值買進
-  function holdingAt(rec, h, D) {
+  function holdingAt(rec, h, day) {
     const base = { ...h, account: rec.account, recDate: rec.date, est: false,
       priceDate: h.navDate || (h.price ? rec.date : null), price: h.price || null };
-    if (D <= rec.date) return base;
+    if (day <= rec.date) return base;
     const isUSD = (D.funds[h.name] || {}).currency === 'USD';
     if (h.shares && !isUSD) {
       // 錨定價：截圖上的市價；截圖沒有就用截圖當天的收盤價（抓到之前先不估算）
       const px0 = h.price || ((priceSeries(h.name).find(([d]) => d === rec.date) || [])[1]);
       if (!px0) return base;
-      const p = priceAt(h.name, D);
+      const p = priceAt(h.name, day);
       if (!p || p.d <= rec.date) return base;
       const net = h.value / (h.shares * px0);
       return { ...base, value: h.shares * p.v * net, price: p.v, priceDate: p.d, est: true };
+    }
+    if (isUSD) {
+      // 美股：錨定 = 截圖日前一個美股收盤 × 截圖日匯率；之後 = 當天美股收盤 × 當天匯率
+      const code = (D.funds[h.name] || {}).code;
+      const u0 = priceBefore('USD:' + code, rec.date), f0 = priceAt('FX:USDTWD', rec.date);
+      const u = priceAt('USD:' + code, day), f = priceAt('FX:USDTWD', day);
+      if (!u0 || !f0 || !u || !f || (u.d <= u0.d && f.d <= f0.d)) return base;
+      const units = h.value / (u0.v * f0.v);
+      return { ...base, value: units * u.v * f.v, price: u.v * f.v, priceDate: u.d > f.d ? u.d : f.d, est: true };
     }
     const anchor = h.navDate ? priceAt(h.name, h.navDate) : priceBefore(h.name, rec.date);
     if (!anchor) return base;
@@ -414,23 +423,23 @@
     if (plan && plan.frequency === '每週' && plan.day in WEEKDAY && plan.amount > 0) {
       let d = addDays(rec.date, 1);
       while (new Date(d + 'T00:00:00Z').getUTCDay() !== WEEKDAY[plan.day]) d = addDays(d, 1);
-      for (; d <= D; d = addDays(d, 7)) {
-        const nav = priceOnOrAfter(h.name, d, D);
+      for (; d <= day; d = addDays(d, 7)) {
+        const nav = priceOnOrAfter(h.name, d, day);
         if (!nav) break;
         units += plan.amount / nav.v; cost += plan.amount; buys++;
       }
     }
-    const p = priceAt(h.name, D);
+    const p = priceAt(h.name, day);
     if (!p || (p.d <= anchor.d && !buys)) return base;
     return { ...base, value: units * p.v, cost, units, price: p.v, priceDate: p.d, est: true, buys };
   }
   const accountIds = [...new Set([...D.accounts.map((a) => a.id), ...records.map((r) => r.account)])];
-  function stateAt(D, fundName) {
+  function stateAt(day, fundName) {
     const out = [];
     for (const id of accountIds) {
-      const r = latestAsOf(id, D);
+      const r = latestAsOf(id, day);
       if (!r) continue;
-      for (const h of r.holdings) if (!fundName || h.name === fundName) out.push(holdingAt(r, h, D));
+      for (const h of r.holdings) if (!fundName || h.name === fundName) out.push(holdingAt(r, h, day));
     }
     return out;
   }
