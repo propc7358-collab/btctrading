@@ -52,6 +52,10 @@ window.PORTFOLIO = {
     {
       id: 'K', name: '永豐美股（定存）',
       note: '豐存股定期定額；截圖金額是美元，依 2026/11/10 匯率 32.907 換成台幣（原始美元金額保留）'
+    },
+    {
+      id: 'L', name: '中信美股',
+      note: '複委託（台幣帳戶），截圖金額是美元；依 2026/11/10 匯率 32.907 換成台幣（原始美元金額保留）'
     }
   ],
 
@@ -110,6 +114,9 @@ window.PORTFOLIO = {
     'Invesco QQQ': { category: '美股', type: 'ETF', code: 'QQQ', currency: 'USD' },
     'Tesla': { category: '美股', type: '股票', code: 'TSLA', currency: 'USD' },
     'Roundhill 七巨頭 ETF': { category: '美股', type: 'ETF', code: 'MAGS', currency: 'USD' },
+    // 中信美股新增
+    'ARK 區塊鏈金融科技 ETF': { category: '美股', type: 'ETF', code: 'ARKF', currency: 'USD' },
+    'Vanguard 全世界股票 ETF': { category: '全球', type: 'ETF', code: 'VT', currency: 'USD' },
     // 國泰台股新增
     '主動安聯亞半導體': { category: '亞洲', type: 'ETF', code: '00412A' },
     '元大MSCI金融': { category: '台股', type: 'ETF', code: '0055' },
@@ -299,6 +306,17 @@ window.PORTFOLIO = {
         { name: 'Roundhill 七巨頭 ETF', shares: 46.6017, avgUSD: 68.67, priceUSD: 69.09, costUSD: 3200.31, valueUSD: 3219.71, cost: 105313, value: 105951, dca: true },
         { name: 'VanEck 半導體 ETF', shares: 12.93997, avgUSD: 587.35, priceUSD: 487.41, costUSD: 7600.35, valueUSD: 6307.07, cost: 250105, value: 207547, dca: true },
         { name: 'Tesla', shares: 3.54461, avgUSD: 423.21, priceUSD: 378.05, costUSD: 1500.13, valueUSD: 1340.04, cost: 49365, value: 44097, dca: true }
+      ]
+    },
+    {
+      date: '2026-11-10',
+      account: 'L',
+      fx: 32.907,
+      // 截圖（2026/11/10 18:50，美元）：投入成本與參考損益，3 檔 ETF
+      holdings: [
+        { name: 'ARK 區塊鏈金融科技 ETF', shares: 0.01293, avgUSD: 50.2707, priceUSD: 42.54, costUSD: 0.65, valueUSD: 0.55, cost: 21, value: 18 },
+        { name: 'VanEck 半導體 ETF', shares: 13.7233, avgUSD: 512.701, priceUSD: 487.41, costUSD: 7035.95, valueUSD: 6688.87, cost: 231532, value: 220111 },
+        { name: 'Vanguard 全世界股票 ETF', shares: 7.61112, avgUSD: 131.6495, priceUSD: 155.68, costUSD: 1002.0, valueUSD: 1184.9, cost: 32973, value: 38992 }
       ]
     }
   ]
