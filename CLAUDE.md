@@ -1,6 +1,6 @@
 # 投資水位紀錄：用截圖更新的流程
 
-使用者會上傳基金 App 的截圖，並說明是哪個帳戶。請依下面步驟更新 `portfolio/data.js`，`portfolio/index.html` 會自動讀取它。頁面本身不用改。
+使用者會上傳基金或證券 App 的截圖，並說明是哪個帳戶。請依下面步驟更新 `portfolio/data.js`，`portfolio/index.html` 會自動讀取它和 `portfolio/prices.js`。頁面本身不用改。
 
 ## 每次收到截圖
 
@@ -18,8 +18,18 @@
        - 如果截圖有帳戶的本金合計，推算結果要對得上那個合計。
      - `navDate`：有淨值日就填。
      - `dca: true`：使用者說明是定期定額才加。
+     - **股票／ETF** 另外記 `shares`（庫存股數）和 `price`（截圖市價）：
+       - `cost` = 投入成本。
+       - `value` = 投入成本 + 券商的投資損益（券商已扣預估賣出費用）。
+       - `reported` 記 `{ pnl, marketValue }`。
    - `reported`：截圖上有帳戶合計（現值、本金）時填入，頁面會自動核對。
-3. **新基金**：在 `funds` 補上 `category`（台股／全球／債券……）。
+3. **新標的**：在 `funds` 補上：
+   - `category`：台股／全球／債券……
+   - `type`：基金／ETF／股票
+   - 每日抓價用的代碼：
+     - 基金填 `cnyesId`，用 `https://fund.api.cnyes.com/fund/api/v1/search/fund?fundName=<名稱>` 查。
+     - 股票／ETF 填 `code`（證券代號）。
+   - 加完後執行 `python3 portfolio/update_prices.py`。
 4. **其他設定**：使用者說了可投資總資金，就填 `settings.budget`。
 5. **檢查**：
    - `node -e "global.window={};require('./portfolio/data.js');console.log('ok')"` 能執行。
@@ -32,7 +42,32 @@
      - `files` 是 `{"data.js": "<scratchpad>/artifact/data.js"}`
    - 不同的對話裡要另外帶 `url: https://claude.ai/artifact/Dwqpy3WYGDKyEPf5ScjntG`，並且先用 `action: "read"` 讀一次。
 
-## 回報給使用者
+## 每日價格更新（排程每週二到週六早上執行）
+
+1. `git fetch origin claude/cool-cray-31xrez && git checkout claude/cool-cray-31xrez && git pull`
+2. `python3 portfolio/update_prices.py`：
+   - 從以下來源抓價格，寫進 `portfolio/prices.js`：
+     - 鉅亨（fund.api.cnyes.com）：基金淨值
+     - 證交所（openapi.twse.com.tw）：收盤價
+     - 櫃買中心（www.tpex.org.tw）：收盤價
+   - 印出 ⚠ 的項目要回報。
+3. `prices.js` 有變動才 commit、push，並照上面第 7 步重新發布網頁；沒有變動就不用。
+4. 回報一行：
+   - 估算總現值
+   - 最近一日淨值變動（金額與 %，已扣定期定額）
+   - 漲跌最大的兩三個標的
+   - 有沒有抓價失敗
+
+### 頁面的估算規則
+
+- **股票／ETF**：股數 × 收盤價 × （截圖現值 ÷ 截圖市值）。最後一項是為了沿用券商扣費口徑。
+- **基金**：
+  - 單位數 = 截圖現值 ÷ 錨定淨值。
+  - 錨定淨值用截圖的淨值日；沒寫淨值日就用截圖日前一個淨值日。
+  - 每週定期定額：每個扣款日以當天（或之後第一個）淨值加買單位，並加本金。
+- **新截圖**：有新截圖時以截圖數字為準，估算從新截圖重新開始。
+
+
 
 用一段話說明下面幾件事：
 
@@ -49,6 +84,7 @@
 
 - `A` = LINE Bank 基金
 - `B` = 國泰銀行基金
+- `C` = 中國信託台股（證券帳戶，記股數與市價）
 
 ## 定期定額
 

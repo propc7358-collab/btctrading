@@ -16,16 +16,31 @@ window.PORTFOLIO = {
           start: '2026-08-03', next: '2026-11-16', count: 14, status: '正常扣款', asOf: '2026-11-10' }
       ]
     },
-    { id: 'B', name: '國泰銀行基金' }
+    { id: 'B', name: '國泰銀行基金' },
+    {
+      id: 'C', name: '中國信託台股',
+      note: '現值 = 投入成本 + 券商的投資損益（已扣除預估賣出手續費與證交稅），所以會比「股數 × 市價」略低'
+    }
   ],
 
-  // 基金基本資料（類別用於配置比例）
+  // 標的基本資料：category 用於配置比例；cnyesId（鉅亨基金代碼）或 code（證券代號）用於每日抓價
   funds: {
-    '施羅德台灣樂活中小基金-A類型': { category: '台股' },
-    '安聯台灣科技基金':             { category: '台股' },
-    '統一龍馬基金':                 { category: '台股' },
-    '復華全球物聯網科技臺幣':       { category: '全球' },
-    '復華全方位基金A類型':          { category: '台股' }
+    '施羅德台灣樂活中小基金-A類型': { category: '台股', type: '基金', cnyesId: 'A42010' },
+    '安聯台灣科技基金':             { category: '台股', type: '基金', cnyesId: 'A36004' },
+    '統一龍馬基金':                 { category: '台股', type: '基金', cnyesId: 'A09004' },
+    '復華全球物聯網科技臺幣':       { category: '全球', type: '基金', cnyesId: 'A23065' },
+    '復華全方位基金A類型':          { category: '台股', type: '基金', cnyesId: 'A23015' },
+    // 中國信託台股（code = 證券代號）
+    '群益臺灣加權正2':   { category: '台股', type: 'ETF', code: '00685L', note: '2 倍槓桿' },
+    '兆豐台灣晶圓製造':  { category: '台股', type: 'ETF', code: '00913' },
+    '野村臺灣新科技50':  { category: '台股', type: 'ETF', code: '00935' },
+    '主動統一台股增長':  { category: '台股', type: 'ETF', code: '00981A' },
+    '貝萊德世界股票':    { category: '全球', type: 'ETF', code: '009826' },
+    '主動統一全球創新':  { category: '全球', type: 'ETF', code: '00988A' },
+    '主動復華未來50':    { category: '台股', type: 'ETF', code: '00991A' },
+    '台達電':            { category: '台股', type: '股票', code: '2308' },
+    '台光電':            { category: '台股', type: '股票', code: '2383' },
+    '聯發科':            { category: '台股', type: '股票', code: '2454' }
   },
 
   // 截圖紀錄（依日期排序）
@@ -50,6 +65,24 @@ window.PORTFOLIO = {
         { name: '安聯台灣科技基金',       value: 223570, cost: 275000, navDate: '2026-11-09', costDerived: true },
         { name: '復華全球物聯網科技臺幣', value: 100388, cost: 147000, navDate: '2026-11-06', costDerived: true },
         { name: '復華全方位基金A類型',    value: 21814,  cost: 24500,  navDate: '2026-11-09', costDerived: true }
+      ]
+    },
+    {
+      date: '2026-11-10',
+      account: 'C',
+      // 截圖合計：市值 397,710（股數 × 市價），投資損益 −99,927
+      reported: { pnl: -99927, marketValue: 397710 },
+      holdings: [
+        { name: '群益臺灣加權正2', shares: 8500, price: 9.85, cost: 108588, value: 83523 },
+        { name: '兆豐台灣晶圓製造', shares: 100, price: 40.84, cost: 5020, value: 4060 },
+        { name: '野村臺灣新科技50', shares: 50, price: 49.45, cost: 2934, value: 2450 },
+        { name: '主動統一台股增長', shares: 400, price: 24.27, cost: 11944, value: 9679 },
+        { name: '貝萊德世界股票', shares: 278, price: 10.11, cost: 2888, value: 2788 },
+        { name: '主動統一全球創新', shares: 5872, price: 13.18, cost: 106124, value: 77205 },
+        { name: '主動復華未來50', shares: 3449, price: 14.42, cost: 59697, value: 49615 },
+        { name: '台達電', shares: 18, price: 1275, cost: 32372, value: 22850 },
+        { name: '台光電', shares: 13, price: 4365, cost: 66999, value: 56495 },
+        { name: '聯發科', shares: 23, price: 3830, cost: 99727, value: 87701 }
       ]
     }
   ]

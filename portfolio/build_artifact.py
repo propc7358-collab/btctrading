@@ -1,7 +1,7 @@
 """把 index.html 轉成 claude.ai Artifact 用的頁面（去掉 doctype/html/head/body，發布時平台會自己包）。
 
 用法：python3 portfolio/build_artifact.py <輸出資料夾>
-輸出：<輸出資料夾>/index.html 與 data.js
+輸出：<輸出資料夾>/index.html、data.js、prices.js
 """
 import re, shutil, sys
 from pathlib import Path
@@ -14,4 +14,6 @@ for pat in [r'<!DOCTYPE html>\s*', r'<html[^>]*>\s*', r'</html>\s*', r'<head>\s*
     html = re.sub(pat, '', html, flags=re.I)
 (out / 'index.html').write_text(html, encoding='utf-8')
 shutil.copy(here / 'data.js', out / 'data.js')
+if (here / 'prices.js').exists():
+    shutil.copy(here / 'prices.js', out / 'prices.js')
 print(out / 'index.html')

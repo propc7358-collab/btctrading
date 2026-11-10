@@ -198,7 +198,7 @@
   <!-- 總覽 -->
   <section class="card hero" aria-label="總覽">
     <div class="hero-main">
-      <div class="label">總參考現值（TWD）</div>
+      <div class="label" id="kpiLabel">總參考現值（TWD）</div>
       <div class="value" id="kpiValue">—</div>
       <div class="delta" id="kpiDelta">—</div>
       <div class="sub" id="kpiCount"></div>
@@ -213,7 +213,7 @@
         <div class="value" id="kpiPnl">—</div>
       </div>
       <div class="tile">
-        <div class="label">較上次紀錄（淨值變動）</div>
+        <div class="label" id="kpiChangeLabel">最近一日淨值變動</div>
         <div class="value" id="kpiChange">—</div>
         <div class="hint" id="kpiChangeHint"></div>
       </div>
@@ -230,17 +230,17 @@
   <section class="card" aria-label="持有明細">
     <div class="card-head">
       <h2>持有明細</h2>
-      <span class="meta">各帳戶最新一筆截圖</span>
+      <span class="meta" id="holdMeta"></span>
     </div>
     <div id="accounts"></div>
-    <div class="note">「較上次」是扣除加碼／減碼後的淨值變動，等於（本次現值 − 新投入）÷ 上次現值 − 1。</div>
+    <div class="note">截圖之後的日子用每日淨值／收盤價估算：基金以截圖現值 ÷ 當時淨值推算單位數，股票用股數；下一張截圖會以實際數字為準。「較前日」已扣除定期定額等新投入。</div>
   </section>
 
   <div class="grid-2">
-    <section class="card" aria-label="依基金合併">
+    <section class="card" aria-label="依標的合併">
       <div class="card-head">
-        <h2>依基金合併</h2>
-        <span class="meta">跨帳戶同名基金合計</span>
+        <h2>依標的合併</h2>
+        <span class="meta">跨帳戶同一標的合計</span>
       </div>
       <div class="legend">
         <span class="key"><span class="sw-rect" style="background:var(--series-value)"></span>參考現值</span>
@@ -272,12 +272,12 @@
     <div class="table-wrap" style="margin-top:12px">
       <table id="trendTable">
         <thead>
-          <tr><th>日期</th><th class="num">參考現值</th><th class="num">投入本金</th><th class="num">損益</th><th class="num">報酬率</th><th class="num">淨值變動</th></tr>
+          <tr><th>日期</th><th class="num">參考現值</th><th class="num">投入本金</th><th class="num">損益</th><th class="num">報酬率</th><th class="num">淨值變動</th><th class="num">來源</th></tr>
         </thead>
         <tbody></tbody>
       </table>
     </div>
-    <div class="note">某天只更新了部分帳戶時，其他帳戶沿用各自最近一次的截圖。</div>
+    <div class="note">「截圖」是 App 上的實際數字；「估算」是用當天淨值／收盤價推算。</div>
   </section>
 
   <!-- 紀錄 -->
@@ -298,6 +298,7 @@
 </div>
 
 <script src="data.js"></script>
+<script src="prices.js"></script>
 <script>
 (function () {
   'use strict';
@@ -353,6 +354,29 @@
   }
 
   // ---------- 資料推導 ----------
+  // 每日價格（portfolio/prices.js，由 update_prices.py 產生）
+  const PRICES = (window.PRICES && window.PRICES.series) || {};
+  const priceSeries = (name) => PRICES[name] || [];
+  // 某日（含）以前最新的價格
+  function priceAt(name, date) {
+    let p = null;
+    for (const [d, v] of priceSeries(name)) { if (d <= date) p = { d, v }; else break; }
+    return p;
+  }
+  // 某日（不含）以前最新的價格
+  function priceBefore(name, date) {
+    let p = null;
+    for (const [d, v] of priceSeries(name)) { if (d < date) p = { d, v }; else break; }
+    return p;
+  }
+  // 某日（含）以後、上限日以前第一個價格（定期定額的買進淨值）
+  function priceOnOrAfter(name, date, limit) {
+    for (const [d, v] of priceSeries(name)) if (d >= date && d <= limit) return { d, v };
+    return null;
+  }
+  const WEEKDAY = { '週日': 0, '週一': 1, '週二': 2, '週三': 3, '週四': 4, '週五': 5, '週六': 6 };
+  const addDays = (iso, n) => { const t = new Date(iso + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); };
+
   // 每個帳戶在某日（含）以前最新的一筆紀錄
   function latestAsOf(accountId, date) {
     let r = null;
@@ -364,12 +388,64 @@
     for (const x of records) { if (x === rec) break; if (x.account === rec.account) r = x; }
     return r;
   }
-  const accountIds = [...new Set([...D.accounts.map((a) => a.id), ...records.map((r) => r.account)])];
-  const lastDate = records.length ? records[records.length - 1].date : null;
-  const currentRecords = accountIds.map((id) => latestAsOf(id, lastDate || '9999')).filter(Boolean);
-  const currentHoldings = currentRecords.flatMap((r) => r.holdings.map((h) => ({ ...h, account: r.account, recDate: r.date })));
 
-  // 兩筆紀錄間的變動：淨值損益 = 現值變化 − 本金變化
+  // 截圖持有在某日的狀態。截圖當天用截圖數字；之後用最新價格估算。
+  //   股票／ETF：股數 × 收盤價 × （截圖現值 ÷ 截圖市值，保留券商扣費口徑）
+  //   基金：單位數 = 截圖現值 ÷ 錨定淨值（截圖的淨值日，沒有就用截圖日前一個淨值日）
+  //         每週定期定額：每個扣款日以當天（或之後第一個）淨值買進
+  function holdingAt(rec, h, D) {
+    const base = { ...h, account: rec.account, recDate: rec.date, est: false,
+      priceDate: h.navDate || (h.price ? rec.date : null), price: h.price || null };
+    if (D <= rec.date) return base;
+    if (h.shares && h.price) {
+      const p = priceAt(h.name, D);
+      if (!p || p.d <= rec.date) return base;
+      const net = h.value / (h.shares * h.price);
+      return { ...base, value: h.shares * p.v * net, price: p.v, priceDate: p.d, est: true };
+    }
+    const anchor = h.navDate ? priceAt(h.name, h.navDate) : priceBefore(h.name, rec.date);
+    if (!anchor) return base;
+    let units = h.value / anchor.v, cost = h.cost, buys = 0;
+    const plan = planFor(rec.account, h.name);
+    if (plan && plan.frequency === '每週' && plan.day in WEEKDAY && plan.amount > 0) {
+      let d = addDays(rec.date, 1);
+      while (new Date(d + 'T00:00:00Z').getUTCDay() !== WEEKDAY[plan.day]) d = addDays(d, 1);
+      for (; d <= D; d = addDays(d, 7)) {
+        const nav = priceOnOrAfter(h.name, d, D);
+        if (!nav) break;
+        units += plan.amount / nav.v; cost += plan.amount; buys++;
+      }
+    }
+    const p = priceAt(h.name, D);
+    if (!p || (p.d <= anchor.d && !buys)) return base;
+    return { ...base, value: units * p.v, cost, units, price: p.v, priceDate: p.d, est: true, buys };
+  }
+  const accountIds = [...new Set([...D.accounts.map((a) => a.id), ...records.map((r) => r.account)])];
+  function stateAt(D, fundName) {
+    const out = [];
+    for (const id of accountIds) {
+      const r = latestAsOf(id, D);
+      if (!r) continue;
+      for (const h of r.holdings) if (!fundName || h.name === fundName) out.push(holdingAt(r, h, D));
+    }
+    return out;
+  }
+  const lastRecordDate = records.length ? records[records.length - 1].date : null;
+  const firstRecordDate = records.length ? records[0].date : null;
+  // 時間軸：截圖日 + 第一筆截圖之後的每個價格日
+  const dates = (() => {
+    const s = new Set(records.map((r) => r.date));
+    if (firstRecordDate) for (const k in PRICES) for (const [d] of PRICES[k]) if (d >= firstRecordDate) s.add(d);
+    return [...s].sort();
+  })();
+  const lastDate = dates.length ? dates[dates.length - 1] : null;
+  const prevDate = dates.length > 1 ? dates[dates.length - 2] : null;
+  const currentRecords = accountIds.map((id) => latestAsOf(id, lastDate || '9999')).filter(Boolean);
+  const currentHoldings = lastDate ? stateAt(lastDate) : [];
+  const prevHoldings = prevDate ? stateAt(prevDate) : [];
+  const isEstimate = currentHoldings.some((h) => h.est);
+
+  // 兩筆截圖間的變動：淨值損益 = 現值變化 − 本金變化
   function diffRecords(prev, cur) {
     const out = { navGain: 0, flow: 0, changes: [] };
     if (!prev) { out.first = true; return out; }
@@ -384,40 +460,28 @@
       out.flow += dc; pv += p.value; cv += h.value;
     }
     for (const [name, p] of pm) if (!cm.has(name)) { out.changes.push('出清 ' + name); out.flow -= p.cost; }
-    // 只拿兩次都持有的部位算淨值損益
     let flowKept = 0;
     for (const [name, h] of cm) { const p = pm.get(name); if (p) flowKept += h.cost - p.cost; }
     out.navGain = cv - pv - flowKept;
     out.navRate = pv ? (cv - flowKept) / pv - 1 : 0;
     return out;
   }
-  // 單一持有相對同帳戶上一筆的淨值變動率
-  function holdingNavChange(rec, h) {
-    const prev = prevRecord(rec);
-    if (!prev) return null;
-    const p = prev.holdings.find((x) => x.name === h.name);
+  // 單一持有相對前一個日期的淨值變動率（扣除新投入）
+  function holdingChange(h) {
+    if (!prevDate) return null;
+    const p = prevHoldings.find((x) => x.account === h.account && x.name === h.name);
     if (!p || !p.value) return { isNew: true };
-    return { rate: (h.value - (h.cost - p.cost)) / p.value - 1, since: prev.date };
+    return { rate: (h.value - (h.cost - p.cost)) / p.value - 1, since: prevDate };
   }
 
-  // 依日期合併所有帳戶（某帳戶當天沒更新就沿用最近一筆）
-  // fundName 有值時只看該基金
+  // 每個日期的合計（某帳戶沒有新截圖就用最新價格估算）。fundName 有值時只看該標的
   function series(fundName) {
-    const dates = [...new Set(records.map((r) => r.date))];
     const pts = [];
     let prevMap = null;
     for (const d of dates) {
-      const map = new Map();
-      for (const id of accountIds) {
-        const r = latestAsOf(id, d);
-        if (!r) continue;
-        for (const h of r.holdings) {
-          if (fundName && h.name !== fundName) continue;
-          map.set(id + '|' + h.name, h);
-        }
-      }
+      const list = stateAt(d, fundName);
+      const map = new Map(list.map((h) => [h.account + '|' + h.name, h]));
       if (!map.size) { prevMap = map; continue; }
-      const list = [...map.values()];
       const t = totals(list);
       let navRate = null;
       if (prevMap && prevMap.size) {
@@ -425,7 +489,8 @@
         for (const [k, h] of map) { const p = prevMap.get(k); if (p) { pv += p.value; cv += h.value; flow += h.cost - p.cost; } }
         if (pv) navRate = (cv - flow) / pv - 1;
       }
-      pts.push({ date: d, value: t.value, cost: t.cost, navRate });
+      const isRecordDay = records.some((r) => r.date === d && (!fundName || r.holdings.some((h) => h.name === fundName)));
+      pts.push({ date: d, value: t.value, cost: t.cost, navRate, est: list.some((h) => h.est) && !isRecordDay });
       prevMap = map;
     }
     return pts;
@@ -433,13 +498,18 @@
 
   // ---------- render ----------
   function render() {
-    $('updatedAt').textContent = lastDate ? '最新截圖 ' + sl(lastDate) + ' · 共 ' + records.length + ' 筆紀錄' : '尚無紀錄';
+    const priceLatest = window.PRICES && window.PRICES.latest;
+    $('updatedAt').textContent = lastRecordDate
+      ? '最新截圖 ' + sl(lastRecordDate) + (priceLatest ? ' · 價格更新至 ' + sl(priceLatest) : '') + ' · 共 ' + records.length + ' 筆截圖'
+      : '尚無紀錄';
+    $('kpiLabel').textContent = isEstimate ? '總參考現值（TWD · 估算至 ' + sl(lastDate) + '）' : '總參考現值（TWD）';
     const t = totals(currentHoldings);
     $('kpiValue').textContent = fmt(t.value);
     const delta = $('kpiDelta');
     delta.textContent = signed(t.pnl) + '（' + pct(t.rate) + '）';
     delta.className = 'delta ' + tone(t.pnl);
-    $('kpiCount').textContent = currentRecords.length + ' 個帳戶 · ' + currentHoldings.length + ' 筆持有';
+    $('kpiCount').textContent = currentRecords.length + ' 個帳戶 · ' + currentHoldings.length + ' 筆持有'
+      + (isEstimate ? ' · 最近截圖合計 ' + fmt(totals(currentRecords.flatMap((r) => r.holdings)).value) : '');
     $('kpiCost').textContent = fmt(t.cost);
     const pnl = $('kpiPnl'); pnl.textContent = signed(t.pnl); pnl.className = 'value ' + tone(t.pnl);
 
@@ -453,7 +523,7 @@
       $('kpiChangeHint').textContent = '對比 ' + sl(a.date) + '（' + pct(b.navRate || 0) + '）' + (Math.abs(flow) >= 1 ? '，另有本金 ' + signed(flow) : '');
     } else {
       ch.textContent = '—'; ch.className = 'value';
-      $('kpiChangeHint').textContent = '下次上傳截圖後開始計算';
+      $('kpiChangeHint').textContent = '明天抓到新的淨值後開始計算';
     }
 
     const budget = +D.settings.budget || 0;
@@ -468,6 +538,7 @@
       $('kpiLevelHint').textContent = '尚未設定可投資總資金';
     }
 
+    $('holdMeta').textContent = isEstimate ? '截圖之後用每日價格估算' : '各帳戶最新一筆截圖';
     renderAccounts();
     renderFundChart();
     renderAlloc();
@@ -482,10 +553,13 @@
     if (!currentRecords.length) { host.append(el('div', { class: 'empty', text: '尚無紀錄' })); return; }
     for (const rec of currentRecords) {
       const acc = D.accounts.find((a) => a.id === rec.account) || {};
-      const t = totals(rec.holdings);
+      const shot = totals(rec.holdings);
+      const list = currentHoldings.filter((h) => h.account === rec.account);
+      const t = totals(list);
+      const estDate = list.filter((h) => h.est).map((h) => h.priceDate).sort().pop();
       const head = el('div', { class: 'platform-title' },
         el('strong', { text: acc.name || rec.account }),
-        el('span', { class: 'meta', text: '· ' + rec.holdings.length + ' 檔 · 截圖 ' + sl(rec.date) }),
+        el('span', { class: 'meta', text: '· ' + rec.holdings.length + ' 檔 · 截圖 ' + sl(rec.date) + (estDate ? ' · 估算至 ' + sl(estDate) : '') }),
         acc.note ? el('span', { class: 'meta', text: '· ' + acc.note }) : null
       );
       const box = el('div', { class: 'platform' }, head);
@@ -497,30 +571,41 @@
         box.append(el('div', { class: 'meta', style: 'color:var(--ink-2);font-size:13px;margin:0 0 4px' }, el('span', { class: 'pill', text: '定期定額' }), document.createTextNode(' ' + bits.slice(0).join(' · ').replace(/^定期定額 /, ''))));
       }
       if (rec.reported) {
-        const dv = Math.abs(rec.reported.value - t.value), dc = rec.reported.cost != null ? Math.abs(rec.reported.cost - t.cost) : 0;
-        if (dv > 1 || dc > 1) box.append(el('div', { class: 'warn', text: '⚠ 明細加總和截圖上的帳戶合計不一致（現值 ' + fmt(rec.reported.value) + (rec.reported.cost != null ? '、本金 ' + fmt(rec.reported.cost) : '') + '）' }));
+        const R = rec.reported, bad = [];
+        if (R.value != null && Math.abs(R.value - shot.value) > 1) bad.push('現值 ' + fmt(R.value));
+        if (R.cost != null && Math.abs(R.cost - shot.cost) > 1) bad.push('本金 ' + fmt(R.cost));
+        if (R.pnl != null && Math.abs(R.pnl - shot.pnl) > 1) bad.push('損益 ' + signed(R.pnl));
+        if (bad.length) box.append(el('div', { class: 'warn', text: '⚠ 明細加總和截圖上的帳戶合計不一致（' + bad.join('、') + '）' }));
       }
       const tbody = el('tbody');
-      for (const h of rec.holdings) {
+      for (const h of list) {
         const pnl = h.value - h.cost;
         const rate = h.cost ? pnl / h.cost : 0;
+        const meta = D.funds[h.name] || {};
         const nameCell = el('td', null, el('span', { class: 'fund-name', text: h.name }));
-        const cat = (D.funds[h.name] || {}).category;
-        if (cat) nameCell.append(el('span', { class: 'tag', text: cat }));
+        if (meta.code) nameCell.append(el('span', { class: 'tag', text: meta.code }));
+        if (meta.category) nameCell.append(el('span', { class: 'tag', text: meta.category }));
+        if (meta.note) nameCell.append(el('span', { class: 'tag', text: meta.note }));
         if (h.dca || planFor(rec.account, h.name)) nameCell.append(el('span', { class: 'tag', text: '定期定額' }));
-        const nc = holdingNavChange(rec, h);
-        const ncCell = el('td', { class: 'num', 'data-label': '較上次' });
+        const sub = [];
+        const px = (v) => (v >= 1000 ? nf.format(v) : v.toFixed(2));
+        if (h.shares) { sub.push(fmt(h.shares) + ' 股'); if (h.price) sub.push('@ ' + px(h.price)); }
+        else if (h.units) sub.push('約 ' + h.units.toFixed(1) + ' 單位 · 淨值 ' + px(h.price));
+        if (h.buys) sub.push('截圖後定期定額 ' + h.buys + ' 次');
+        if (sub.length) nameCell.append(el('div', { class: 'note', style: 'margin:2px 0 0', text: sub.join(' ') }));
+        const nc = holdingChange(h);
+        const ncCell = el('td', { class: 'num', 'data-label': '較前日' });
         if (!nc) ncCell.textContent = '—';
         else if (nc.isNew) ncCell.textContent = '新';
         else { ncCell.textContent = pct(nc.rate); ncCell.className += ' ' + toneR(nc.rate); ncCell.title = '對比 ' + sl(nc.since); }
         tbody.append(el('tr', null,
           nameCell,
-          el('td', { class: 'num', 'data-label': '參考現值', text: fmt(h.value) }),
+          el('td', { class: 'num', 'data-label': h.est ? '估算現值' : '參考現值', text: fmt(h.value), title: h.est ? '估算（' + sl(h.priceDate) + ' 價格）' : '截圖數字' }),
           el('td', { class: 'num hide-sm', text: fmt(h.cost) + (h.costDerived ? '*' : '') }),
           el('td', { class: 'num ' + tone(pnl), 'data-label': '損益', text: signed(pnl) }),
           el('td', { class: 'num ' + tone(pnl), 'data-label': '報酬率', text: pct(rate) }),
           ncCell,
-          el('td', { class: 'num hide-sm', text: h.navDate ? h.navDate.slice(5).replace('-', '/') : '—' })
+          el('td', { class: 'num hide-sm', text: h.priceDate ? h.priceDate.slice(5).replace('-', '/') : '—' })
         ));
       }
       const tfoot = el('tfoot', null, el('tr', null,
@@ -533,8 +618,8 @@
       ));
       const table = el('table', { class: 'holdings' },
         el('thead', null, el('tr', null,
-          el('th', { text: '基金' }), el('th', { class: 'num', text: '參考現值' }), el('th', { class: 'num hide-sm', text: '本金' }),
-          el('th', { class: 'num', text: '損益' }), el('th', { class: 'num', text: '報酬率' }), el('th', { class: 'num', text: '較上次' }), el('th', { class: 'num hide-sm', text: '淨值日' })
+          el('th', { text: '標的' }), el('th', { class: 'num', text: estDate ? '估算現值' : '參考現值' }), el('th', { class: 'num hide-sm', text: '本金' }),
+          el('th', { class: 'num', text: '損益' }), el('th', { class: 'num', text: '報酬率' }), el('th', { class: 'num', text: '較前日' }), el('th', { class: 'num hide-sm', text: '價格日' })
         )),
         tbody, tfoot
       );
@@ -582,7 +667,7 @@
     const H = rows.length * rowH;
     const max = Math.max(...rows.map((r) => Math.max(r.value, r.cost))) * 1.02;
     const x = (v) => (v / max) * (W - padR);
-    const svg = sv('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': '各基金參考現值與本金' });
+    const svg = sv('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': '各標的參考現值與本金' });
     const tip = el('div', { class: 'tooltip' });
     rows.forEach((r, i) => {
       const y0 = i * rowH, by = y0 + labelH;
@@ -627,7 +712,8 @@
     if (!t.value) { host.append(el('div', { class: 'empty', text: '沒有持有資料' })); return; }
     const groups = [
       ['帳戶', (h) => accName(h.account)],
-      ['類別', (h) => (D.funds[h.name] || {}).category || '未分類']
+      ['類別', (h) => (D.funds[h.name] || {}).category || '未分類'],
+      ['種類', (h) => (D.funds[h.name] || {}).type || '未分類']
     ];
     for (const [title, keyFn] of groups) {
       const m = new Map();
@@ -677,7 +763,8 @@
         el('td', { class: 'num', text: fmt(s.cost) }),
         el('td', { class: 'num ' + tone(pnl), text: signed(pnl) }),
         el('td', { class: 'num ' + tone(pnl), text: pct(s.cost ? pnl / s.cost : 0) }),
-        el('td', { class: 'num ' + (s.navRate == null ? '' : toneR(s.navRate)), text: s.navRate == null ? '—' : pct(s.navRate) })
+        el('td', { class: 'num ' + (s.navRate == null ? '' : toneR(s.navRate)), text: s.navRate == null ? '—' : pct(s.navRate) }),
+        el('td', { class: 'num', text: s.est ? '估算' : '截圖' })
       ));
     }
     if (!data.length) { host.append(el('div', { class: 'empty', text: '尚無紀錄' })); return; }
@@ -752,7 +839,8 @@
         ttRow('var(--series-value)', '參考現值', fmt(d.value)),
         ttRow('var(--series-cost)', '投入本金', fmt(d.cost)),
         ttRow(null, '損益', signed(pnl) + '（' + pct(d.cost ? pnl / d.cost : 0) + '）', tone(pnl)),
-        d.navRate == null ? null : ttRow(null, '淨值變動', pct(d.navRate), toneR(d.navRate))
+        d.navRate == null ? null : ttRow(null, '淨值變動', pct(d.navRate), toneR(d.navRate)),
+        ttRow(null, '來源', d.est ? '估算' : '截圖')
       );
       const box = host.getBoundingClientRect(), scale = box.width / W;
       if (evt && evt.clientX != null) placeTip(host, tip, evt.clientX - box.left, evt.clientY - box.top);
