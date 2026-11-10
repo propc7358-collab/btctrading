@@ -9,7 +9,7 @@ window.PORTFOLIO = {
   // 帳戶：使用者上傳截圖時說明是哪個帳戶
   accounts: [
     { id: 'A', name: 'LINE Bank 基金', note: '有 1 筆定期定額（尚未確認是哪一檔）' },
-    { id: 'B', name: '國泰基金' }
+    { id: 'B', name: '國泰銀行基金' }
   ],
 
   // 基金基本資料（類別用於配置比例）
