@@ -25,6 +25,7 @@
     --down: #006300;
     --danger: #d03b3b;
     --focus: #2a78d6;
+    --watch: #8a5c00;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -45,6 +46,7 @@
       --down: #0ca30c;
       --danger: #e66767;
       --focus: #3987e5;
+      --watch: #fab219;
     }
   }
   :root[data-theme="dark"] {
@@ -65,6 +67,7 @@
     --down: #0ca30c;
     --danger: #e66767;
     --focus: #3987e5;
+    --watch: #fab219;
   }
 
   * { box-sizing: border-box; }
@@ -163,6 +166,12 @@
 
   .note { color: var(--muted); font-size: 12px; margin-top: 8px; }
   .warn { color: var(--danger); font-size: 12px; margin: 2px 0 6px; }
+  .status { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
+  .status.ok { color: var(--down); background: color-mix(in srgb, var(--down) 12%, transparent); }
+  .status.watch { color: var(--watch); background: color-mix(in srgb, #fab219 22%, transparent); }
+  .status.call { color: var(--danger); background: color-mix(in srgb, var(--danger) 14%, transparent); }
+  .loan-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
+  @media (max-width: 760px) { .loan-tiles { grid-template-columns: 1fr 1fr; } }
   .changes { font-size: 13px; color: var(--ink-2); white-space: normal; text-align: left; min-width: 12em; }
   #logTable th:first-child, #logTable td:first-child { white-space: nowrap; }
   select.inline { font: inherit; font-size: 13px; padding: 4px 8px; border-radius: 8px; border: 1px solid var(--axis); background: var(--surface); color: var(--ink); max-width: 100%; }
@@ -224,6 +233,27 @@
         <div class="hint" id="kpiLevelHint"></div>
       </div>
     </div>
+  </section>
+
+  <!-- 質押借款 -->
+  <section class="card" aria-label="質押借款" id="loanCard" hidden>
+    <div class="card-head">
+      <h2>質押借款</h2>
+      <span class="meta" id="loanMeta"></span>
+    </div>
+    <div class="loan-tiles">
+      <div class="tile"><div class="label">借款合計</div><div class="value" id="loanTotal">—</div></div>
+      <div class="tile"><div class="label">淨資產（總現值 − 借款）</div><div class="value" id="loanNet">—</div></div>
+      <div class="tile"><div class="label">年利息</div><div class="value" id="loanInterest">—</div><div class="hint" id="loanInterestHint"></div></div>
+      <div class="tile"><div class="label">整體維持率</div><div class="value" id="loanRatio">—</div><div class="hint">擔保品市值 ÷ 借款</div></div>
+    </div>
+    <div class="table-wrap">
+      <table id="loanTable" class="holdings">
+        <thead><tr><th>借款</th><th class="num">金額</th><th class="num">年利率</th><th class="num hide-sm">年利息</th><th class="num">擔保品市值</th><th class="num">維持率</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="note">維持率用最新收盤價計算；一般低於 130% 會被要求補擔保品（實際門檻以借貸契約為準）。160% 以上標「安全」，130%～160% 標「注意」。</div>
   </section>
 
   <!-- 持有明細 -->
@@ -554,12 +584,53 @@
     }
 
     $('holdMeta').textContent = isEstimate ? '截圖之後用每日價格估算' : '各帳戶最新一筆截圖';
+    renderLoans(t);
     renderAccounts();
     renderFundChart();
     renderAlloc();
     renderTrendSelect();
     renderTrend();
     renderLog();
+  }
+
+  function renderLoans(t) {
+    const loans = D.loans || [];
+    $('loanCard').hidden = !loans.length;
+    if (!loans.length) return;
+    const total = loans.reduce((a, l) => a + l.amount, 0);
+    const interest = loans.reduce((a, l) => a + l.amount * l.rate / 100, 0);
+    const day = lastDate || '9999';
+    const status = (r) => r >= 1.6 ? ['ok', '✓ 安全'] : r >= 1.3 ? ['watch', '! 注意'] : ['call', '✕ 低於 130%'];
+    let collAll = 0;
+    const tbody = $('loanTable').querySelector('tbody');
+    tbody.replaceChildren();
+    for (const l of loans) {
+      let coll = 0, missing = [];
+      for (const c of l.collateral || []) {
+        const p = priceAt(c.name, day);
+        if (p) coll += c.shares * p.v; else missing.push(c.name);
+      }
+      collAll += coll;
+      const r = coll / l.amount;
+      const [cls, label] = status(r);
+      const desc = (l.collateral || []).map((c) => ((D.funds[c.name] || {}).code || c.name) + ' ' + fmt(c.shares)).join('、');
+      tbody.append(el('tr', null,
+        el('td', null, el('div', { class: 'fund-name', text: l.name }), el('div', { class: 'note', style: 'margin:2px 0 0', text: '撥款 ' + sl(l.date) + ' · ' + desc + ' 股' })),
+        el('td', { class: 'num', 'data-label': '金額', text: fmt(l.amount) }),
+        el('td', { class: 'num', 'data-label': '年利率', text: l.rate + '%' }),
+        el('td', { class: 'num hide-sm', text: fmt(l.amount * l.rate / 100) }),
+        el('td', { class: 'num', 'data-label': '擔保品市值', text: fmt(coll) + (missing.length ? '*' : '') }),
+        el('td', { class: 'num', 'data-label': '維持率' }, el('div', { text: (r * 100).toFixed(1) + '%' }), el('span', { class: 'status ' + cls, text: label }))
+      ));
+    }
+    $('loanTotal').textContent = fmt(total);
+    $('loanNet').textContent = fmt(t.value - total);
+    $('loanInterest').textContent = fmt(interest);
+    $('loanInterestHint').textContent = '每月約 ' + fmt(interest / 12) + '，平均利率 ' + (interest / total * 100).toFixed(2) + '%';
+    const ra = collAll / total, [cls] = status(ra);
+    const lr = $('loanRatio'); lr.textContent = (ra * 100).toFixed(1) + '%'; lr.className = 'value';
+    lr.append(' ', el('span', { class: 'status ' + cls, text: status(ra)[1] }));
+    $('loanMeta').textContent = loans.length + ' 筆 · 價格日 ' + sl(day);
   }
 
   function renderAccounts() {
@@ -603,6 +674,7 @@
         if (meta.category) nameCell.append(el('span', { class: 'tag', text: meta.category }));
         if (meta.note) nameCell.append(el('span', { class: 'tag', text: meta.note }));
         if (h.dca || planFor(rec.account, h.name)) nameCell.append(el('span', { class: 'tag', text: '定期定額' }));
+        if (h.costUnknown) nameCell.append(el('span', { class: 'tag', text: '成本未知' }));
         const sub = [];
         const px = (v) => (v >= 1000 ? nf.format(v) : v.toFixed(2));
         if (h.shares) { sub.push(fmt(h.shares) + ' 股'); if (h.price) sub.push('@ ' + px(h.price)); }
@@ -625,9 +697,9 @@
         tbody.append(el('tr', null,
           nameCell,
           el('td', { class: 'num', 'data-label': h.est ? '估算現值' : '參考現值', text: fmt(h.value), title: h.est ? '估算（' + sl(h.priceDate) + ' 價格）' : '截圖數字' }),
-          el('td', { class: 'num hide-sm', text: fmt(h.cost) + (h.costDerived ? '*' : '') }),
-          el('td', { class: 'num ' + tone(pnl), 'data-label': '損益', text: signed(pnl) }),
-          el('td', { class: 'num ' + tone(pnl), 'data-label': '報酬率', text: pct(rate) }),
+          el('td', { class: 'num hide-sm', text: h.costUnknown ? '未知' : fmt(h.cost) + (h.costDerived ? '*' : '') }),
+          el('td', { class: 'num ' + (h.costUnknown ? '' : tone(pnl)), 'data-label': '損益', text: h.costUnknown ? '—' : signed(pnl) }),
+          el('td', { class: 'num ' + (h.costUnknown ? '' : tone(pnl)), 'data-label': '報酬率', text: h.costUnknown ? '—' : pct(rate) }),
           ncCell,
           el('td', { class: 'num hide-sm', text: h.priceDate ? h.priceDate.slice(5).replace('-', '/') : '—' })
         ));

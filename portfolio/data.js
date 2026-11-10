@@ -6,6 +6,27 @@ window.PORTFOLIO = {
     budget: null
   },
 
+  // 借款（負債）。collateral 的 name 要和 funds 一致，頁面會用每日價格算擔保維持率
+  loans: [
+    {
+      id: 'L1', name: '玉山不限用途借貸 #1', date: '2026-04-27', amount: 1090000, rate: 3.0, account: 'O',
+      collateral: [
+        { name: '主動統一台股增長', shares: 19000 },
+        { name: '主動統一全球創新', shares: 28000 },
+        { name: '主動復華未來50', shares: 30000 },
+        { name: '主動群益科技創新', shares: 20000 }
+      ]
+    },
+    {
+      id: 'L2', name: '玉山不限用途借貸 #2', date: '2026-10-16', amount: 500000, rate: 4.25, account: 'O',
+      collateral: [
+        { name: '國泰費城半導體', shares: 2000 },
+        { name: '主動統一全球創新', shares: 37000 },
+        { name: '主動復華未來50', shares: 24000 }
+      ]
+    }
+  ],
+
   // 帳戶：使用者上傳截圖時說明是哪個帳戶
   accounts: [
     {
@@ -64,6 +85,10 @@ window.PORTFOLIO = {
     {
       id: 'N', name: '幣託',
       note: '虛擬資產交易所（冷錢包）；BTC、BNB 每日用 Yahoo 美元價 × 匯率估算，台幣餘額不變'
+    },
+    {
+      id: 'O', name: '玉山質押股票',
+      note: '不限用途款項借貸的擔保品（不在玉山台股庫存裡）；成本未知，暫以現值計'
     }
   ],
 
@@ -398,6 +423,19 @@ window.PORTFOLIO = {
         { name: '台幣現金', value: 2238, cost: 2238 },
         { name: '比特幣', shares: 0.04132273, avgTWD: 2417235, cost: 99887, value: 101240 },
         { name: '幣安幣', shares: 0.3061382, avgTWD: 24543.3, cost: 7514, value: 6965 }
+      ]
+    },
+    {
+      date: '2026-11-10',
+      account: 'O',
+      // 借貸核准畫面的擔保品股數（兩筆借款合計）；價格用 11/10 收盤（00830、00992A 由玉山台股截圖反推），
+      // 現值已扣預估賣出手續費與證交稅；成本未知，暫設成本 = 現值
+      holdings: [
+        { name: '國泰費城半導體', shares: 2000, price: 72.8, cost: 145247, value: 145247, costUnknown: true },
+        { name: '主動統一全球創新', shares: 65000, price: 13.18, cost: 854623, value: 854623, costUnknown: true },
+        { name: '主動復華未來50', shares: 54000, price: 14.42, cost: 776792, value: 776792, costUnknown: true },
+        { name: '主動統一台股增長', shares: 19000, price: 24.27, cost: 460012, value: 460012, costUnknown: true },
+        { name: '主動群益科技創新', shares: 20000, price: 14.42, cost: 287701, value: 287701, costUnknown: true }
       ]
     }
   ]
