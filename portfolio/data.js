@@ -32,6 +32,10 @@ window.PORTFOLIO = {
     {
       id: 'F', name: '國泰美股（美金）',
       note: '複委託美金交割；截圖金額是美元，依 2026/11/10 匯率 32.907 換成台幣（原始美元金額保留在 costUSD／valueUSD）'
+    },
+    {
+      id: 'G', name: '口袋證券台股',
+      note: '截圖只有股數與試算損益／報酬率；本金 = 損益 ÷ 報酬率 推算，現值 = 本金 + 損益（已扣預估賣出費用，比庫存總市值略低）'
     }
   ],
 
@@ -65,6 +69,12 @@ window.PORTFOLIO = {
     'Alphabet A': { category: '美股', type: '股票', code: 'GOOGL', currency: 'USD' },
     'iShares 軟體 ETF': { category: '美股', type: 'ETF', code: 'IGV', currency: 'USD' },
     'Tema 太空 ETF': { category: '美股', type: 'ETF', code: 'NASA', currency: 'USD' },
+    // 口袋證券台股新增
+    '元大台灣50正2': { category: '台股', type: 'ETF', code: '00631L', note: '2 倍槓桿' },
+    '台積電': { category: '台股', type: '股票', code: '2330' },
+    '南電': { category: '台股', type: '股票', code: '8046' },
+    '鴻勁': { category: '台股', type: '股票', code: '7769' },
+    '欣興': { category: '台股', type: '股票', code: '3037' },
     // 國泰台股新增
     '主動安聯亞半導體': { category: '亞洲', type: 'ETF', code: '00412A' },
     '元大MSCI金融': { category: '台股', type: 'ETF', code: '0055' },
@@ -172,6 +182,24 @@ window.PORTFOLIO = {
         { name: 'iShares 軟體 ETF', shares: 5, avgUSD: 101.24, costUSD: 506.2, valueUSD: 505.3, cost: 16658, value: 16628 },
         { name: 'Tema 太空 ETF', shares: 100, avgUSD: 33.9105, costUSD: 3391.05, valueUSD: 2094.0, cost: 111589, value: 68907 },
         { name: 'VanEck 半導體 ETF', shares: 13.14333, avgUSD: 577.017392, costUSD: 7583.93, valueUSD: 6392.26, cost: 249564, value: 210350, dca: true }
+      ]
+    },
+    {
+      date: '2026-11-10',
+      account: 'G',
+      // 截圖（2026/11/10 18:39）：試算總損益 −314,549、庫存總市值 1,132,827
+      reported: { pnl: -314549, marketValue: 1132827 },
+      holdings: [
+        { name: '元大台灣50正2', shares: 24000, cost: 931848, value: 725071, pnl: -206777, rate: -22.19, costDerived: true },
+        { name: '主動統一全球創新', shares: 9000, cost: 145701, value: 118455, pnl: -27246, rate: -18.7, costDerived: true },
+        { name: '主動復華未來50', shares: 5000, cost: 87102, value: 72016, pnl: -15086, rate: -17.32, costDerived: true },
+        { name: '台達電', shares: 30, cost: 55659, value: 38121, pnl: -17538, rate: -31.51, costDerived: true },
+        { name: '聯發科', shares: 24, cost: 111263, value: 91614, pnl: -19649, rate: -17.66, costDerived: true },
+        { name: '台光電', shares: 11, cost: 60919, value: 47864, pnl: -13055, rate: -21.43, costDerived: true },
+        { name: '台積電', shares: 6, cost: 14370, value: 13663, pnl: -707, rate: -4.92, costDerived: true },
+        { name: '南電', shares: 4, cost: 4822, value: 4009, pnl: -813, rate: -16.86, costDerived: true },
+        { name: '鴻勁', shares: 4, cost: 29356, value: 16827, pnl: -12529, rate: -42.68, costDerived: true },
+        { name: '欣興', shares: 4, cost: 4452, value: 3303, pnl: -1149, rate: -25.81, costDerived: true }
       ]
     }
   ]
