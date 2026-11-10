@@ -51,7 +51,11 @@
      - `files` 是 `{"data.js": "<scratchpad>/artifact/data.js", "prices.js": "<scratchpad>/artifact/prices.js", "history.js": "<scratchpad>/artifact/history.js"}`
    - 不同的對話裡要另外帶 `url: https://claude.ai/artifact/Dwqpy3WYGDKyEPf5ScjntG`，並且先用 `action: "read"` 讀一次。
 
-## 每日紀錄（排程每天午夜 00:00 台北時間執行）
+## 每日紀錄（排程每天 22:00 與 00:00 台北時間各執行一次）
+
+- 22:00：基金淨值大約 21 點多公布，這次記錄當天的淨值。
+- 00:00：再用最新價格更新同一天的紀錄，例如較晚公布的收盤價。每天仍然只有一筆。
+
 
 1. `git fetch origin claude/cool-cray-31xrez && git checkout claude/cool-cray-31xrez && git pull`
 2. `python3 portfolio/update_prices.py`：
@@ -63,7 +67,7 @@
    - 印出 ⚠ 的項目要回報。
 3. `node portfolio/snapshot.js`：
    - 用無頭瀏覽器打開頁面，讀出頁面算好的總現值、本金、借款、各帳戶現值，寫進 `portfolio/history.js`。
-   - 不給日期時記成「台北時間前一天」，所以午夜執行會記成剛結束的那一天；同一天重跑會覆蓋。
+   - 不給日期時，用「台北時間現在減 1 小時」的日期：22:00 執行記成當天，00:00 執行也記成剛結束的那一天。同一天重跑會覆蓋。
 4. commit、push（`prices.js`、`history.js`），並照上面第 7 步重新發布網頁。
 5. 回報一行：
    - 估算總現值、淨資產，以及和前一天紀錄的差

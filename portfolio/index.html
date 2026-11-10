@@ -166,6 +166,16 @@
 
   .note { color: var(--muted); font-size: 12px; margin-top: 8px; }
   .warn { color: var(--danger); font-size: 12px; margin: 2px 0 6px; }
+  .daily { display: grid; grid-template-columns: minmax(220px, 1fr) 2.2fr; gap: 20px; align-items: start; }
+  .daily .label { color: var(--ink-2); font-size: 14px; }
+  .daily .day-value { font-size: 34px; font-weight: 700; line-height: 1.15; margin: 4px 0 2px; font-variant-numeric: tabular-nums; }
+  .daily .hint { color: var(--muted); font-size: 12px; }
+  .daily .day-pct { display: block; font-size: 18px; font-weight: 600; margin-top: 2px; }
+  .day-groups { margin-top: 12px; display: grid; gap: 4px; }
+  .day-groups .row { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; padding: 4px 0; border-bottom: 1px solid var(--grid); }
+  .day-groups .row span:first-child { color: var(--ink-2); }
+  .day-groups .row span:last-child { font-variant-numeric: tabular-nums; }
+  @media (max-width: 760px) { .daily { grid-template-columns: 1fr; } .daily .day-value { font-size: 30px; } }
   .tabs { display: flex; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; padding-bottom: 2px; }
   .tab { flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-start; gap: 1px; text-align: left; border-radius: 10px; padding: 7px 12px; }
   .tab .tab-name { font-weight: 600; font-size: 14px; }
@@ -217,6 +227,23 @@
   </header>
 
   <!-- 總覽 -->
+  <!-- 每日淨值：折線圖與當日變化 -->
+  <section class="card daily" aria-label="每日淨值">
+    <div class="daily-change">
+      <div class="label" id="dayLabel">當日淨值變化</div>
+      <div class="day-value" id="dayNav">—</div>
+      <div class="hint" id="dayNavHint"></div>
+      <div class="day-groups" id="dayGroups"></div>
+    </div>
+    <div class="daily-chart">
+      <div class="card-head" style="margin-bottom:6px">
+        <h2>每日總現值</h2>
+        <span class="meta" id="dayChartMeta"></span>
+      </div>
+      <div class="chart" id="dayChart"></div>
+    </div>
+  </section>
+
   <section class="card hero" aria-label="總覽">
     <div class="hero-main">
       <div class="label" id="kpiLabel">總參考現值（TWD）</div>
@@ -336,7 +363,7 @@
         <tbody></tbody>
       </table>
     </div>
-    <div class="note">每天午夜 12 點自動記錄一次，用當時最新的淨值／收盤價估算。「日變動」是總現值和前一天紀錄的差，含新投入的本金。</div>
+    <div class="note">每天晚上 10 點記錄當日淨值，午夜 12 點再用最新價格更新同一天的紀錄。「日變動」是總現值和前一天紀錄的差，含新投入的本金。</div>
   </section>
 
   <!-- 紀錄 -->
@@ -1063,12 +1090,116 @@
     }
   }
 
+  // 最上方：每日紀錄的折線圖與最近一天的變化
+  function historyRows() {
+    return (window.HISTORY || []).slice().sort((a, b) => a.date.localeCompare(b.date));
+  }
+  function renderDaily() {
+    const H = historyRows();
+    const last = H[H.length - 1], prev = H[H.length - 2];
+    $('dayChartMeta').textContent = H.length ? H.length + ' 天 · 最新 ' + sl(H[H.length - 1].date) : '';
+    const nav = $('dayNav'), groupsHost = $('dayGroups');
+    groupsHost.replaceChildren();
+    if (last && prev) {
+      const flow = last.cost - prev.cost;
+      const chg = last.value - prev.value - flow;
+      const rate = prev.value ? chg / prev.value : 0;
+      $('dayLabel').textContent = '當日淨值變化（' + sl(last.date) + '）';
+      nav.replaceChildren(document.createTextNode(signed(chg)), el('span', { class: 'day-pct', text: pct(rate) }));
+      nav.className = 'day-value ' + tone(chg);
+      $('dayNavHint').textContent = '總現值 ' + fmt(last.value) + '，較 ' + sl(prev.date) + ' ' + signed(last.value - prev.value)
+        + (Math.abs(flow) >= 1 ? '（含新投入 ' + signed(flow) + '）' : '') + '；淨資產 ' + fmt(last.value - (last.loans || 0));
+      const byGroup = new Map();
+      for (const id of new Set([...Object.keys(last.accounts || {}), ...Object.keys(prev.accounts || {})])) {
+        const g = groupOf(id);
+        byGroup.set(g, (byGroup.get(g) || 0) + ((last.accounts || {})[id] || 0) - ((prev.accounts || {})[id] || 0));
+      }
+      for (const g of GROUP_ORDER) if (byGroup.has(g)) {
+        const v = byGroup.get(g);
+        groupsHost.append(el('div', { class: 'row' }, el('span', { text: g }), el('span', { class: tone(v), text: signed(v) })));
+      }
+      groupsHost.append(el('div', { class: 'hint', style: 'margin-top:4px', text: '分類變化是各帳戶現值的差，含新投入。' }));
+    } else {
+      $('dayLabel').textContent = '當日淨值變化';
+      nav.textContent = '—'; nav.className = 'day-value';
+      $('dayNavHint').textContent = last ? '目前只有 ' + sl(last.date) + ' 一天的紀錄（總現值 ' + fmt(last.value) + '），明天起顯示每日變化。' : '每晚 10 點記錄第一筆後顯示。';
+    }
+    drawDailyChart($('dayChart'), H.map((h) => ({ date: h.date, value: h.value, cost: h.cost, net: h.value - (h.loans || 0) })));
+  }
+  function drawDailyChart(host, data) {
+    host.replaceChildren();
+    if (!data.length) { host.append(el('div', { class: 'empty', text: '還沒有每日紀錄。' })); return; }
+    const W = Math.max(300, host.clientWidth || 700), H = W < 500 ? 180 : 210;
+    const m = { t: 10, r: 60, b: 26, l: 48 }, iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const times = data.map((d) => Date.parse(d.date + 'T00:00:00'));
+    const t0 = times[0], t1 = times[times.length - 1];
+    const x = (t) => (t1 === t0 ? m.l + iw / 2 : m.l + ((t - t0) / (t1 - t0)) * iw);
+    const vals = data.map((d) => d.value);
+    let lo = Math.min(...vals), hi = Math.max(...vals);
+    const span = Math.max(hi - lo, hi * 0.02);
+    lo = Math.max(0, lo - span * 0.15); hi += span * 0.15;
+    const step = niceStep(hi - lo, 4); lo = Math.floor(lo / step) * step; hi = Math.ceil(hi / step) * step;
+    const y = (v) => m.t + ih - ((v - lo) / (hi - lo)) * ih;
+    const svg = sv('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': '每日總現值與投入本金' });
+    for (let v = lo; v <= hi + 1e-6; v += step) {
+      svg.append(sv('line', { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: v === lo ? 'var(--axis)' : 'var(--grid)', 'stroke-width': 1 }));
+      const tx = sv('text', { x: m.l - 8, y: y(v) + 4, 'text-anchor': 'end', 'font-size': 11, fill: 'var(--muted)', style: 'font-variant-numeric:tabular-nums' });
+      tx.textContent = compactTWD(v); svg.append(tx);
+    }
+    const idxs = new Set([0, data.length - 1]);
+    for (let i = 1, n = Math.min(4, data.length - 2); i <= n; i++) idxs.add(Math.round((i * (data.length - 1)) / (n + 1)));
+    for (const i of idxs) {
+      const tx = sv('text', { x: x(times[i]), y: H - 6, 'text-anchor': data.length === 1 ? 'middle' : i === 0 ? 'start' : i === data.length - 1 ? 'end' : 'middle', 'font-size': 11, fill: 'var(--muted)' });
+      tx.textContent = data[i].date.slice(5).replace('-', '/'); svg.append(tx);
+    }
+    const ser = [{ key: 'value', color: 'var(--series-value)' }];
+    if (data.length > 1) {
+      svg.append(sv('path', { d: 'M' + data.map((d, i) => x(times[i]) + ',' + y(d.value)).join('L') + 'L' + x(t1) + ',' + (m.t + ih) + 'L' + x(t0) + ',' + (m.t + ih) + 'Z', fill: 'var(--series-value)', opacity: .08 }));
+      for (const s of ser) svg.append(sv('path', { d: 'M' + data.map((d, i) => x(times[i]) + ',' + y(d[s.key])).join('L'), fill: 'none', stroke: s.color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
+    }
+    const last = data[data.length - 1], lx = x(t1);
+    for (const s of ser) svg.append(sv('circle', { cx: lx, cy: y(last[s.key]), r: 4, fill: s.color, stroke: 'var(--surface)', 'stroke-width': 2 }));
+    { const t = sv('text', { x: lx + 8, y: y(last.value) + 4, 'font-size': 11, fill: 'var(--ink-2)' }); t.textContent = compactTWD(last.value); svg.append(t); }
+    const cross = sv('line', { y1: m.t, y2: m.t + ih, stroke: 'var(--axis)', 'stroke-width': 1, visibility: 'hidden' });
+    const dots = ser.map((s) => sv('circle', { r: 4, fill: s.color, stroke: 'var(--surface)', 'stroke-width': 2, visibility: 'hidden' }));
+    const hit = sv('rect', { x: m.l - 10, y: 0, width: iw + 20, height: H, fill: 'transparent', tabindex: '0', 'aria-label': '每日總現值，可用左右鍵瀏覽' });
+    svg.append(cross, ...dots, hit);
+    const tip = el('div', { class: 'tooltip' });
+    let fi = data.length - 1;
+    const show = (i, evt) => {
+      const d = data[i], cx = x(times[i]), p = data[i - 1];
+      cross.setAttribute('x1', cx); cross.setAttribute('x2', cx); cross.setAttribute('visibility', 'visible');
+      ser.forEach((s, k) => { dots[k].setAttribute('cx', cx); dots[k].setAttribute('cy', y(d[s.key])); dots[k].setAttribute('visibility', 'visible'); });
+      const chg = p ? d.value - p.value - (d.cost - p.cost) : null;
+      tip.replaceChildren(el('div', { class: 'tt-title', text: sl(d.date) }),
+        ttRow('var(--series-value)', '總現值', fmt(d.value)), ttRow(null, '投入本金', fmt(d.cost)),
+        ttRow(null, '淨資產', fmt(d.net)),
+        chg == null ? null : ttRow(null, '淨值變化', signed(chg) + '（' + pct(p.value ? chg / p.value : 0) + '）', tone(chg)));
+      const box = host.getBoundingClientRect(), sc = box.width / W;
+      if (evt && evt.clientX != null) placeTip(host, tip, evt.clientX - box.left, evt.clientY - box.top);
+      else placeTip(host, tip, cx * sc, y(d.value) * sc);
+    };
+    const hide = () => { tip.classList.remove('show'); cross.setAttribute('visibility', 'hidden'); dots.forEach((d) => d.setAttribute('visibility', 'hidden')); };
+    hit.addEventListener('pointermove', (e) => {
+      const box = svg.getBoundingClientRect(), px = (e.clientX - box.left) * (W / box.width);
+      let b = 0, bd = Infinity; times.forEach((t, i) => { const dd = Math.abs(x(t) - px); if (dd < bd) { bd = dd; b = i; } });
+      fi = b; show(b, e);
+    });
+    hit.addEventListener('pointerleave', hide); hit.addEventListener('blur', hide);
+    hit.addEventListener('focus', () => show(fi));
+    hit.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') { fi = Math.max(0, fi - 1); show(fi); e.preventDefault(); }
+      if (e.key === 'ArrowRight') { fi = Math.min(data.length - 1, fi + 1); show(fi); e.preventDefault(); }
+    });
+    host.append(svg, tip);
+  }
+
   function renderHistory() {
     const H = (window.HISTORY || []).slice().sort((a, b) => a.date.localeCompare(b.date));
     const tbody = $('histTable').querySelector('tbody');
     tbody.replaceChildren();
     $('histMeta').textContent = H.length ? H.length + ' 天' : '';
-    if (!H.length) { tbody.append(el('tr', null, el('td', { colspan: 6, class: 'empty', text: '今晚 12 點會記錄第一筆。' }))); return; }
+    if (!H.length) { tbody.append(el('tr', null, el('td', { colspan: 6, class: 'empty', text: '今晚 10 點會記錄第一筆。' }))); return; }
     H.forEach((h, i) => { h.prev = i ? H[i - 1] : null; });
     for (const h of H.slice().reverse()) {
       const dv = h.prev ? h.value - h.prev.value : null;
@@ -1097,9 +1228,10 @@
   }
 
   let rt;
-  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { renderFundChart(); renderTrend(); }, 120); });
+  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { renderFundChart(); renderTrend(); renderDaily(); }, 120); });
   render();
   renderHistory();
+  renderDaily();
   exportSummary();
 })();
 </script>

@@ -1,6 +1,6 @@
 // 每日紀錄：用無頭瀏覽器打開 index.html，讀出頁面算好的合計，寫進 history.js。
 // 用法：node portfolio/snapshot.js [YYYY-MM-DD]
-//   不給日期時，用「台北時間現在減 1 小時」的日期，所以午夜 00:00 執行會記成前一天。
+//   不給日期時，用「台北時間現在減 1 小時」的日期：22:00 執行記成當天，00:00 執行記成剛結束的前一天。
 // 同一天重跑會覆蓋那一天。
 const fs = require('fs');
 const path = require('path');
