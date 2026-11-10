@@ -56,6 +56,10 @@ window.PORTFOLIO = {
     {
       id: 'L', name: '中信美股',
       note: '複委託（台幣帳戶），截圖金額是美元；依 2026/11/10 匯率 32.907 換成台幣（原始美元金額保留）'
+    },
+    {
+      id: 'M', name: '玉山台股',
+      note: '截圖有每檔總損益、股數、成交均價與總成本；現值 = 總成本 + 總損益'
     }
   ],
 
@@ -117,6 +121,27 @@ window.PORTFOLIO = {
     // 中信美股新增
     'ARK 區塊鏈金融科技 ETF': { category: '美股', type: 'ETF', code: 'ARKF', currency: 'USD' },
     'Vanguard 全世界股票 ETF': { category: '全球', type: 'ETF', code: 'VT', currency: 'USD' },
+    // 玉山台股新增
+    '國泰費城半導體': { category: '美股', type: 'ETF', code: '00830' },
+    '中信日本半導體': { category: '亞洲', type: 'ETF', code: '00954' },
+    '主動群益科技創新': { category: '台股', type: 'ETF', code: '00992A' },
+    '智邦': { category: '台股', type: '股票', code: '2345' },
+    '佳世達': { category: '台股', type: '股票', code: '2352' },
+    '金像電': { category: '台股', type: '股票', code: '2368' },
+    '瑞昱': { category: '台股', type: '股票', code: '2379' },
+    '友達': { category: '台股', type: '股票', code: '2409' },
+    '文曄': { category: '台股', type: '股票', code: '3036' },
+    '穩懋': { category: '台股', type: '股票', code: '3105' },
+    '景碩': { category: '台股', type: '股票', code: '3189' },
+    '緯創': { category: '台股', type: '股票', code: '3231' },
+    '群創': { category: '台股', type: '股票', code: '3481' },
+    '嘉澤': { category: '台股', type: '股票', code: '3533' },
+    '祥碩': { category: '台股', type: '股票', code: '5269' },
+    '台燿': { category: '台股', type: '股票', code: '6274' },
+    '矽力*-KY': { category: '台股', type: '股票', code: '6415' },
+    '藥華藥': { category: '台股', type: '股票', code: '6446' },
+    '騰輝電子-KY': { category: '台股', type: '股票', code: '6672' },
+    '新代': { category: '台股', type: '股票', code: '7750' },
     // 國泰台股新增
     '主動安聯亞半導體': { category: '亞洲', type: 'ETF', code: '00412A' },
     '元大MSCI金融': { category: '台股', type: 'ETF', code: '0055' },
@@ -317,6 +342,43 @@ window.PORTFOLIO = {
         { name: 'ARK 區塊鏈金融科技 ETF', shares: 0.01293, avgUSD: 50.2707, priceUSD: 42.54, costUSD: 0.65, valueUSD: 0.55, cost: 21, value: 18 },
         { name: 'VanEck 半導體 ETF', shares: 13.7233, avgUSD: 512.701, priceUSD: 487.41, costUSD: 7035.95, valueUSD: 6688.87, cost: 231532, value: 220111 },
         { name: 'Vanguard 全世界股票 ETF', shares: 7.61112, avgUSD: 131.6495, priceUSD: 155.68, costUSD: 1002.0, valueUSD: 1184.9, cost: 32973, value: 38992 }
+      ]
+    },
+    {
+      date: '2026-11-10',
+      account: 'M',
+      // 截圖（2026/11/10 19:06）：三張共 30 檔；南電的總成本被截掉，用 股數 × 均價 1,391.67 + 買進手續費 推算
+      holdings: [
+        { name: '群益臺灣加權正2', shares: 20000, cost: 252057, value: 196524 },
+        { name: '國泰費城半導體', shares: 800, cost: 0, value: 58100, note: '截圖成本與均價都是 0（可能是匯入或贈與的股票），損益等於現值' },
+        { name: '國泰網路資安', shares: 1000, cost: 64115, value: 58060 },
+        { name: '中信關鍵半導體', shares: 3000, cost: 104218, value: 94601 },
+        { name: '台新臺灣IC設計', shares: 3000, cost: 105399, value: 90801 },
+        { name: '中信日本半導體', shares: 5000, cost: 89827, value: 71228 },
+        { name: '主動統一台股增長', shares: 7020, cost: 202593, value: 169964 },
+        { name: '主動復華未來50', shares: 8000, cost: 137105, value: 115082 },
+        { name: '主動群益科技創新', shares: 4000, cost: 66494, value: 57541 },
+        { name: '智邦', shares: 10, cost: 20328, value: 15384 },
+        { name: '佳世達', shares: 150, cost: 4927, value: 4466 },
+        { name: '金像電', shares: 60, cost: 72270, value: 58725 },
+        { name: '瑞昱', shares: 5, cost: 4000, value: 3709 },
+        { name: '台光電', shares: 6, cost: 30607, value: 26076 },
+        { name: '友達', shares: 650, cost: 23647, value: 17931 },
+        { name: '大立光', shares: 8, cost: 54475, value: 40344 },
+        { name: '文曄', shares: 120, cost: 26071, value: 22702 },
+        { name: '欣興', shares: 1, cost: 975, value: 825 },
+        { name: '穩懋', shares: 10, cost: 5718, value: 4825 },
+        { name: '景碩', shares: 1, cost: 942, value: 742 },
+        { name: '緯創', shares: 30, cost: 5753, value: 5108 },
+        { name: '群創', shares: 50, cost: 2378, value: 1953 },
+        { name: '嘉澤', shares: 10, cost: 19928, value: 17523 },
+        { name: '祥碩', shares: 25, cost: 38628, value: 28003 },
+        { name: '台燿', shares: 10, cost: 16187, value: 9779 },
+        { name: '矽力*-KY', shares: 20, cost: 10379, value: 8772 },
+        { name: '藥華藥', shares: 25, cost: 31223, value: 31860 },
+        { name: '騰輝電子-KY', shares: 55, cost: 29632, value: 27489 },
+        { name: '新代', shares: 2, cost: 4005, value: 3007 },
+        { name: '南電', shares: 15, cost: 20905, value: 15010, costDerived: true }
       ]
     }
   ]
