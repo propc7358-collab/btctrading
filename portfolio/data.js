@@ -25,6 +25,14 @@ window.PORTFOLIO = {
         { name: '主動統一全球創新', shares: 37000 },
         { name: '主動復華未來50', shares: 24000 }
       ]
+    },
+    {
+      id: 'L3', name: '玉山不限用途借貸 #3', date: '2026-09-18', amount: 20000, rate: 4.25, account: 'O',
+      collateral: [
+        { name: '國泰網路資安', shares: 2000 },
+        { name: '台新臺灣IC設計', shares: 2000 },
+        { name: '主動統一台股增長', shares: 1000 }
+      ]
     }
   ],
 
@@ -440,14 +448,16 @@ window.PORTFOLIO = {
     {
       date: '2026-11-10',
       account: 'O',
-      // 借貸核准畫面的擔保品股數（兩筆借款合計）；價格用 11/10 收盤（00830、00992A 由玉山台股截圖反推），
+      // 借貸核准畫面的擔保品股數（三筆借款合計；#3 的擔保品 2026/11/10 晚上補上）；價格用 11/10 收盤（00830、00992A、00875、00947 由玉山台股截圖反推），
       // 現值已扣預估賣出手續費與證交稅；成本未知，暫設成本 = 現值
       holdings: [
         { name: '國泰費城半導體', shares: 2000, price: 72.8, cost: 145247, value: 145247, costUnknown: true },
         { name: '主動統一全球創新', shares: 65000, price: 13.18, cost: 854623, value: 854623, costUnknown: true },
         { name: '主動復華未來50', shares: 54000, price: 14.42, cost: 776792, value: 776792, costUnknown: true },
-        { name: '主動統一台股增長', shares: 19000, price: 24.27, cost: 460012, value: 460012, costUnknown: true },
-        { name: '主動群益科技創新', shares: 20000, price: 14.42, cost: 287701, value: 287701, costUnknown: true }
+        { name: '主動統一台股增長', shares: 20000, price: 24.27, cost: 484223, value: 484223, costUnknown: true },
+        { name: '主動群益科技創新', shares: 20000, price: 14.42, cost: 287701, value: 287701, costUnknown: true },
+        { name: '國泰網路資安', shares: 2000, price: 58.20, cost: 116118, value: 116118, costUnknown: true },
+        { name: '台新臺灣IC設計', shares: 2000, price: 30.34, cost: 60533, value: 60533, costUnknown: true }
       ]
     },
     {
