@@ -397,7 +397,8 @@
     const base = { ...h, account: rec.account, recDate: rec.date, est: false,
       priceDate: h.navDate || (h.price ? rec.date : null), price: h.price || null };
     if (D <= rec.date) return base;
-    if (h.shares) {
+    const isUSD = (D.funds[h.name] || {}).currency === 'USD';
+    if (h.shares && !isUSD) {
       // 錨定價：截圖上的市價；截圖沒有就用截圖當天的收盤價（抓到之前先不估算）
       const px0 = h.price || ((priceSeries(h.name).find(([d]) => d === rec.date) || [])[1]);
       if (!px0) return base;
@@ -593,7 +594,13 @@
         const sub = [];
         const px = (v) => (v >= 1000 ? nf.format(v) : v.toFixed(2));
         if (h.shares) { sub.push(fmt(h.shares) + ' 股'); if (h.price) sub.push('@ ' + px(h.price)); }
-        else if (h.units) sub.push('約 ' + h.units.toFixed(1) + ' 單位 · 淨值 ' + px(h.price));
+        if (meta.currency === 'USD') {
+          sub.length = 0;
+          sub.push(h.shares + ' 股');
+          if (h.avgUSD) sub.push('均價 US$' + h.avgUSD.toFixed(2));
+          const u = h.priceDate && priceAt('USD:' + meta.code, h.priceDate);
+          if (h.est && u) sub.push('收盤 US$' + u.v.toFixed(2));
+        } else if (h.units) sub.push('約 ' + h.units.toFixed(1) + ' 單位 · 淨值 ' + px(h.price));
         if (h.buys) sub.push('截圖後定期定額 ' + h.buys + ' 次');
         if (sub.length) nameCell.append(el('div', { class: 'note', style: 'margin:2px 0 0', text: sub.join(' ') }));
         const nc = holdingChange(h);

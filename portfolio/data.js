@@ -24,6 +24,10 @@ window.PORTFOLIO = {
     {
       id: 'D', name: '國泰台股',
       note: '截圖只有股數與總損益（含息）；本金 = 損益 ÷ 報酬率 推算，現值 = 本金 + 損益'
+    },
+    {
+      id: 'E', name: '國泰美股（台幣）',
+      note: '複委託台幣交割；金額都是台幣。本金由損益 ÷ 報酬率推算（SpaceX 用總成本扣掉其他檔）'
     }
   ],
 
@@ -45,6 +49,13 @@ window.PORTFOLIO = {
     '台達電':            { category: '台股', type: '股票', code: '2308' },
     '台光電':            { category: '台股', type: '股票', code: '2383' },
     '聯發科':            { category: '台股', type: '股票', code: '2454' },
+    // 國泰美股（currency: 'USD'，每日估算用美元收盤價 × 匯率）
+    'Applied Optoelectronics': { category: '美股', type: '股票', code: 'AAOI', currency: 'USD' },
+    'Broadcom': { category: '美股', type: '股票', code: 'AVGO', currency: 'USD' },
+    'Alphabet C': { category: '美股', type: '股票', code: 'GOOG', currency: 'USD' },
+    'Rocket Lab': { category: '美股', type: '股票', code: 'RKLB', currency: 'USD' },
+    'VanEck 半導體 ETF': { category: '美股', type: 'ETF', code: 'SMH', currency: 'USD' },
+    'SpaceX': { category: '美股', type: '股票', code: 'SPCX', currency: 'USD' },
     // 國泰台股新增
     '主動安聯亞半導體': { category: '亞洲', type: 'ETF', code: '00412A' },
     '元大MSCI金融': { category: '台股', type: 'ETF', code: '0055' },
@@ -123,6 +134,20 @@ window.PORTFOLIO = {
         { name: '聯發科', shares: 61, cost: 275259, value: 233282, pnl: -41977, rate: -15.25, costDerived: true, dca: true },
         { name: '大立光', shares: 6, cost: 37590, value: 30290, pnl: -7300, rate: -19.42, costDerived: true },
         { name: '日月光投控', shares: 30, cost: 20646, value: 18090, pnl: -2556, rate: -12.38, costDerived: true }
+      ]
+    },
+    {
+      date: '2026-11-10',
+      account: 'E',
+      // 截圖：總預估現值 673,753、總成本 787,600、總預估損益 −113,847（台幣）
+      reported: { value: 673753, cost: 787600, pnl: -113847 },
+      holdings: [
+        { name: 'Applied Optoelectronics', shares: 1, avgUSD: 79.99, cost: 2615, value: 1688, pnl: -927, rate: -35.45, costDerived: true },
+        { name: 'Broadcom', shares: 1.26654, avgUSD: 344.355488, cost: 14072, value: 13253, pnl: -819, rate: -5.82, costDerived: true, dca: true },
+        { name: 'Alphabet C', shares: 30, avgUSD: 357.171333, cost: 344120, value: 283142, pnl: -60978, rate: -17.72, costDerived: true },
+        { name: 'Rocket Lab', shares: 32, avgUSD: 92.883438, cost: 94785, value: 58378, pnl: -36407, rate: -38.41, costDerived: true },
+        { name: 'VanEck 半導體 ETF', shares: 7.66629, avgUSD: 552.938905, cost: 136808, value: 122320, pnl: -14488, rate: -10.59, costDerived: true, dca: true },
+        { name: 'SpaceX', shares: 42, avgUSD: 145.006429, cost: 195200, value: 194972, pnl: -228, rate: -0.12, costDerived: true }
       ]
     }
   ]
