@@ -397,10 +397,13 @@
     const base = { ...h, account: rec.account, recDate: rec.date, est: false,
       priceDate: h.navDate || (h.price ? rec.date : null), price: h.price || null };
     if (D <= rec.date) return base;
-    if (h.shares && h.price) {
+    if (h.shares) {
+      // 錨定價：截圖上的市價；截圖沒有就用截圖當天的收盤價（抓到之前先不估算）
+      const px0 = h.price || ((priceSeries(h.name).find(([d]) => d === rec.date) || [])[1]);
+      if (!px0) return base;
       const p = priceAt(h.name, D);
       if (!p || p.d <= rec.date) return base;
-      const net = h.value / (h.shares * h.price);
+      const net = h.value / (h.shares * px0);
       return { ...base, value: h.shares * p.v * net, price: p.v, priceDate: p.d, est: true };
     }
     const anchor = h.navDate ? priceAt(h.name, h.navDate) : priceBefore(h.name, rec.date);
@@ -624,7 +627,7 @@
         tbody, tfoot
       );
       box.append(el('div', { class: 'table-wrap' }, table));
-      if (rec.holdings.some((h) => h.costDerived)) box.append(el('div', { class: 'note', style: 'margin-top:4px', text: '* 截圖只顯示報酬率，本金由現值 ÷ (1 + 報酬率) 推算。' }));
+      if (rec.holdings.some((h) => h.costDerived)) box.append(el('div', { class: 'note', style: 'margin-top:4px', text: '* 截圖沒有直接顯示本金，由報酬率推算（現值 ÷ (1 + 報酬率)，或損益 ÷ 報酬率）。' }));
       host.append(box);
     }
   }

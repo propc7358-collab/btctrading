@@ -20,6 +20,10 @@ window.PORTFOLIO = {
     {
       id: 'C', name: '中國信託台股',
       note: '現值 = 投入成本 + 券商的投資損益（已扣除預估賣出手續費與證交稅），所以會比「股數 × 市價」略低'
+    },
+    {
+      id: 'D', name: '國泰台股',
+      note: '截圖只有股數與總損益（含息）；本金 = 損益 ÷ 報酬率 推算，現值 = 本金 + 損益'
     }
   ],
 
@@ -40,7 +44,19 @@ window.PORTFOLIO = {
     '主動復華未來50':    { category: '台股', type: 'ETF', code: '00991A' },
     '台達電':            { category: '台股', type: '股票', code: '2308' },
     '台光電':            { category: '台股', type: '股票', code: '2383' },
-    '聯發科':            { category: '台股', type: '股票', code: '2454' }
+    '聯發科':            { category: '台股', type: '股票', code: '2454' },
+    // 國泰台股新增
+    '主動安聯亞半導體': { category: '亞洲', type: 'ETF', code: '00412A' },
+    '元大MSCI金融': { category: '台股', type: 'ETF', code: '0055' },
+    '富邦臺灣中小': { category: '台股', type: 'ETF', code: '00733' },
+    '統一FANG+': { category: '美股', type: 'ETF', code: '00757' },
+    '國泰網路資安': { category: '全球', type: 'ETF', code: '00875' },
+    '中信關鍵半導體': { category: '台股', type: 'ETF', code: '00891' },
+    '第一金太空衛星': { category: '全球', type: 'ETF', code: '00910' },
+    '中信台日韓PCB': { category: '亞洲', type: 'ETF', code: '009828' },
+    '主動野村台灣50': { category: '台股', type: 'ETF', code: '00985A' },
+    '大立光': { category: '台股', type: '股票', code: '3008' },
+    '日月光投控': { category: '台股', type: '股票', code: '3711' }
   },
 
   // 截圖紀錄（依日期排序）
@@ -83,6 +99,30 @@ window.PORTFOLIO = {
         { name: '台達電', shares: 18, price: 1275, cost: 32372, value: 22850 },
         { name: '台光電', shares: 13, price: 4365, cost: 66999, value: 56495 },
         { name: '聯發科', shares: 23, price: 3830, cost: 99727, value: 87701 }
+      ]
+    },
+    {
+      date: '2026-11-10',
+      account: 'D',
+      // 截圖：庫存股數、總損益（含息）與報酬率；標「定額」的是定期定額買股
+      holdings: [
+        { name: '主動安聯亞半導體', shares: 23000, cost: 211661, value: 178409, pnl: -33252, rate: -15.71, costDerived: true },
+        { name: '元大MSCI金融', shares: 59, cost: 2982, value: 2948, pnl: -34, rate: -1.14, costDerived: true, dca: true },
+        { name: '群益臺灣加權正2', shares: 95000, cost: 1183481, value: 934595, pnl: -248886, rate: -21.03, costDerived: true },
+        { name: '富邦臺灣中小', shares: 3000, cost: 231493, value: 183412, pnl: -48081, rate: -20.77, costDerived: true },
+        { name: '統一FANG+', shares: 50, cost: 6544, value: 6722, pnl: 178, rate: 2.72, costDerived: true },
+        { name: '國泰網路資安', shares: 100, cost: 5681, value: 5802, pnl: 121, rate: 2.13, costDerived: true },
+        { name: '中信關鍵半導體', shares: 14000, cost: 504283, value: 442004, pnl: -62279, rate: -12.35, costDerived: true },
+        { name: '第一金太空衛星', shares: 2700, cost: 186811, value: 145750, pnl: -41061, rate: -21.98, costDerived: true, dca: true },
+        { name: '主動統一台股增長', shares: 1000, cost: 26252, value: 24249, pnl: -2003, rate: -7.63, costDerived: true },
+        { name: '中信台日韓PCB', shares: 20000, cost: 204034, value: 157555, pnl: -46479, rate: -22.78, costDerived: true },
+        { name: '主動野村台灣50', shares: 16000, cost: 371839, value: 331197, pnl: -40642, rate: -10.93, costDerived: true },
+        { name: '主動復華未來50', shares: 24000, cost: 420506, value: 345698, pnl: -74808, rate: -17.79, costDerived: true },
+        { name: '台達電', shares: 55, cost: 106246, value: 70048, pnl: -36198, rate: -34.07, costDerived: true },
+        { name: '台光電', shares: 25, cost: 130645, value: 108775, pnl: -21870, rate: -16.74, costDerived: true, dca: true },
+        { name: '聯發科', shares: 61, cost: 275259, value: 233282, pnl: -41977, rate: -15.25, costDerived: true, dca: true },
+        { name: '大立光', shares: 6, cost: 37590, value: 30290, pnl: -7300, rate: -19.42, costDerived: true },
+        { name: '日月光投控', shares: 30, cost: 20646, value: 18090, pnl: -2556, rate: -12.38, costDerived: true }
       ]
     }
   ]
