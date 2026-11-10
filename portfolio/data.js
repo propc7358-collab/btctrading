@@ -44,6 +44,10 @@ window.PORTFOLIO = {
     {
       id: 'I', name: '永豐台股',
       note: '截圖有每檔現值與損益（含息、含稅），本金 = 現值 − 損益'
+    },
+    {
+      id: 'J', name: '永豐美股（單筆）',
+      note: '截圖金額是美元，依 2026/11/10 匯率 32.907 換成台幣（原始美元金額保留）'
     }
   ],
 
@@ -98,6 +102,9 @@ window.PORTFOLIO = {
     '中信特選金融': { category: '台股', type: 'ETF', code: '00917' },
     '台新臺灣IC設計': { category: '台股', type: 'ETF', code: '00947' },
     '凱基台灣TOP50': { category: '台股', type: 'ETF', code: '009816' },
+    // 永豐美股新增
+    'Invesco QQQ': { category: '美股', type: 'ETF', code: 'QQQ', currency: 'USD' },
+    'Tesla': { category: '美股', type: '股票', code: 'TSLA', currency: 'USD' },
     // 國泰台股新增
     '主動安聯亞半導體': { category: '亞洲', type: 'ETF', code: '00412A' },
     '元大MSCI金融': { category: '台股', type: 'ETF', code: '0055' },
@@ -260,6 +267,21 @@ window.PORTFOLIO = {
         { name: '凱基台灣TOP50', shares: 1000, cost: 14710, value: 14805 },
         { name: '中信台日韓PCB', shares: 6000, cost: 64389, value: 47229 },
         { name: '主動統一全球創新', shares: 16347, cost: 266774, value: 214946 }
+      ]
+    },
+    {
+      date: '2026-11-10',
+      account: 'J',
+      fx: 32.907,
+      // 截圖（2026/11/10 18:46，美元）：庫存總市值 23,159.01、損益 −6,582.86（−22.13%）、總付出成本 29,741.87
+      reportedUSD: { value: 23159.01, cost: 29741.87, pnl: -6582.86 },
+      holdings: [
+        { name: 'Tuttle 光子 ETF', shares: 250, avgUSD: 24.78, priceUSD: 14.24, costUSD: 6194.45, valueUSD: 3560, cost: 203841, value: 117149 },
+        { name: 'Tema 太空 ETF', shares: 100, avgUSD: 34.63, priceUSD: 21.11, costUSD: 3462.76, valueUSD: 2111, cost: 113949, value: 69467 },
+        { name: 'Invesco QQQ', shares: 3, avgUSD: 589.53, priceUSD: 679.35, costUSD: 1768.59, valueUSD: 2038.05, cost: 58199, value: 67066 },
+        { name: 'VanEck 半導體 ETF', shares: 21, avgUSD: 579.31, priceUSD: 487.41, costUSD: 12165.49, valueUSD: 10235.61, cost: 400330, value: 336823 },
+        { name: 'Tesla', shares: 8, avgUSD: 425.09, priceUSD: 378.05, costUSD: 3400.69, valueUSD: 3024.4, cost: 111907, value: 99524 },
+        { name: 'Direxion 台積電 2 倍 ETF', shares: 35, avgUSD: 78.57, priceUSD: 62.57, costUSD: 2749.89, valueUSD: 2189.95, cost: 90491, value: 72065 }
       ]
     }
   ]
