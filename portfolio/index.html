@@ -322,6 +322,23 @@
     <div class="note">「截圖」是 App 上的實際數字；「估算」是用當天淨值／收盤價推算。</div>
   </section>
 
+  <!-- 每日紀錄 -->
+  <section class="card" aria-label="每日紀錄">
+    <div class="card-head">
+      <h2>每日紀錄</h2>
+      <span class="meta" id="histMeta"></span>
+    </div>
+    <div class="table-wrap">
+      <table id="histTable">
+        <thead>
+          <tr><th>日期</th><th class="num">總現值</th><th class="num">日變動</th><th class="num hide-sm">投入本金</th><th class="num hide-sm">借款</th><th class="num">淨資產</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="note">每天午夜 12 點自動記錄一次，用當時最新的淨值／收盤價估算。「日變動」是總現值和前一天紀錄的差，含新投入的本金。</div>
+  </section>
+
   <!-- 紀錄 -->
   <section class="card" aria-label="截圖紀錄">
     <div class="card-head">
@@ -341,6 +358,7 @@
 
 <script src="data.js"></script>
 <script src="prices.js"></script>
+<script src="history.js"></script>
 <script>
 (function () {
   'use strict';
@@ -747,7 +765,11 @@
         const u = h.priceDate && priceAt('USD:' + meta.code, h.priceDate);
         if (h.est && u) sub.push('收盤 US$' + u.v.toFixed(2));
         else if (h.priceUSD) sub.push('現價 US$' + h.priceUSD);
-      } else if (h.units) sub.push('約 ' + h.units.toFixed(1) + ' 單位 · 淨值 ' + px(h.price));
+      } else if (h.units) {
+        sub.push((h.est ? '約 ' : '') + Number(h.units).toFixed(1) + ' 單位');
+        if (h.avgNav) sub.push('均價淨值 ' + px(h.avgNav));
+        if (h.price) sub.push('淨值 ' + px(h.price));
+      }
       if (h.buys) sub.push('截圖後定期定額 ' + h.buys + ' 次');
       if (sub.length) nameCell.append(el('div', { class: 'note', style: 'margin:2px 0 0', text: sub.join(' ') }));
       const nc = holdingChange(h);
@@ -1041,9 +1063,44 @@
     }
   }
 
+  function renderHistory() {
+    const H = (window.HISTORY || []).slice().sort((a, b) => a.date.localeCompare(b.date));
+    const tbody = $('histTable').querySelector('tbody');
+    tbody.replaceChildren();
+    $('histMeta').textContent = H.length ? H.length + ' 天' : '';
+    if (!H.length) { tbody.append(el('tr', null, el('td', { colspan: 6, class: 'empty', text: '今晚 12 點會記錄第一筆。' }))); return; }
+    H.forEach((h, i) => { h.prev = i ? H[i - 1] : null; });
+    for (const h of H.slice().reverse()) {
+      const dv = h.prev ? h.value - h.prev.value : null;
+      tbody.append(el('tr', null,
+        el('td', { text: sl(h.date) }),
+        el('td', { class: 'num', text: fmt(h.value) }),
+        el('td', { class: 'num ' + (dv == null ? '' : tone(dv)), text: dv == null ? '—' : signed(dv) + '（' + pct(h.prev.value ? dv / h.prev.value : 0) + '）' }),
+        el('td', { class: 'num hide-sm', text: fmt(h.cost) }),
+        el('td', { class: 'num hide-sm', text: fmt(h.loans || 0) }),
+        el('td', { class: 'num', text: fmt(h.value - (h.loans || 0)) })
+      ));
+    }
+  }
+
+  // 給每日紀錄腳本（portfolio/snapshot.js）讀取的合計，和頁面顯示的數字同一套算法
+  function exportSummary() {
+    const t = totals(currentHoldings);
+    const loans = (D.loans || []).reduce((a, l) => a + l.amount, 0);
+    window.PORTFOLIO_SUMMARY = {
+      priceDate: lastDate, value: Math.round(t.value), cost: Math.round(t.cost), loans,
+      accounts: accountIds.map((id) => {
+        const a = totals(currentHoldings.filter((h) => h.account === id));
+        return { id, value: Math.round(a.value), cost: Math.round(a.cost) };
+      }).filter((a) => a.value || a.cost)
+    };
+  }
+
   let rt;
   window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { renderFundChart(); renderTrend(); }, 120); });
   render();
+  renderHistory();
+  exportSummary();
 })();
 </script>
 </body>

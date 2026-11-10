@@ -94,6 +94,10 @@ window.PORTFOLIO = {
     {
       id: 'P', name: 'MaiCoin', group: '虛擬資產',
       note: '虛擬資產交易所；BTC 每日用 Yahoo 美元價 × 匯率估算，台幣餘額不變（美元餘額 0）'
+    },
+    {
+      id: 'Q', name: '基富通', group: '基金',
+      note: '截圖有庫存單位數與 11/10 淨值，估算用實際單位數'
     }
   ],
 
@@ -104,6 +108,9 @@ window.PORTFOLIO = {
     '統一龍馬基金':                 { category: '台股', type: '基金', cnyesId: 'A09004' },
     '復華全球物聯網科技臺幣':       { category: '全球', type: '基金', cnyesId: 'A23065' },
     '復華全方位基金A類型':          { category: '台股', type: '基金', cnyesId: 'A23015' },
+    '施羅德台灣樂活中小基金-TISA類型': { category: '台股', type: '基金', cnyesId: 'A42126' },
+    '野村中小基金':                 { category: '台股', type: '基金', cnyesId: 'A32008' },
+    '元大新主流基金':               { category: '台股', type: '基金', cnyesId: 'A05016' },
     // 中國信託台股（code = 證券代號）
     '群益臺灣加權正2':   { category: '台股', type: 'ETF', code: '00685L', note: '2 倍槓桿' },
     '兆豐台灣晶圓製造':  { category: '台股', type: 'ETF', code: '00913' },
@@ -450,6 +457,18 @@ window.PORTFOLIO = {
       holdings: [
         { name: '台幣現金', value: 2600, cost: 2600 },
         { name: '比特幣', shares: 0.00285154, avgTWD: 2656847, cost: 7576, value: 6988 }
+      ]
+    },
+    {
+      date: '2026-11-10',
+      account: 'Q',
+      // 截圖（2026/11/10 21:08 更新）：全部基金 171,581；每檔有平均申購淨值、投資本金、庫存單位數、最新淨值
+      reported: { value: 171581, cost: 212571 },
+      holdings: [
+        { name: '野村中小基金', units: 5.0, avgNav: 600.00, cost: 3000, value: 2567, navDate: '2026-11-10' },
+        { name: '施羅德台灣樂活中小基金-A類型', units: 956.5, avgNav: 206.56, cost: 197571, value: 158846, navDate: '2026-11-10' },
+        { name: '施羅德台灣樂活中小基金-TISA類型', units: 201.1, avgNav: 29.84, cost: 6000, value: 5924, navDate: '2026-11-10' },
+        { name: '元大新主流基金', units: 31.0, avgNav: 193.55, cost: 6000, value: 4244, navDate: '2026-11-10' }
       ]
     }
   ]

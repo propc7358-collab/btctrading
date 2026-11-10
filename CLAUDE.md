@@ -48,10 +48,10 @@
    - 先執行 `python3 portfolio/build_artifact.py <scratchpad>/artifact`。
    - 再用 Artifact 工具 publish：
      - `file_path` 是 `<scratchpad>/artifact/index.html`
-     - `files` 是 `{"data.js": "<scratchpad>/artifact/data.js", "prices.js": "<scratchpad>/artifact/prices.js"}`
+     - `files` 是 `{"data.js": "<scratchpad>/artifact/data.js", "prices.js": "<scratchpad>/artifact/prices.js", "history.js": "<scratchpad>/artifact/history.js"}`
    - 不同的對話裡要另外帶 `url: https://claude.ai/artifact/Dwqpy3WYGDKyEPf5ScjntG`，並且先用 `action: "read"` 讀一次。
 
-## 每日價格更新（排程每週二到週六早上執行）
+## 每日紀錄（排程每天午夜 00:00 台北時間執行）
 
 1. `git fetch origin claude/cool-cray-31xrez && git checkout claude/cool-cray-31xrez && git pull`
 2. `python3 portfolio/update_prices.py`：
@@ -61,9 +61,12 @@
      - 櫃買中心（www.tpex.org.tw）：收盤價
      - Yahoo Finance（query1.finance.yahoo.com）：美股收盤價與 USD/TWD 匯率
    - 印出 ⚠ 的項目要回報。
-3. `prices.js` 有變動才 commit、push，並照上面第 7 步重新發布網頁；沒有變動就不用。
-4. 回報一行：
-   - 估算總現值
+3. `node portfolio/snapshot.js`：
+   - 用無頭瀏覽器打開頁面，讀出頁面算好的總現值、本金、借款、各帳戶現值，寫進 `portfolio/history.js`。
+   - 不給日期時記成「台北時間前一天」，所以午夜執行會記成剛結束的那一天；同一天重跑會覆蓋。
+4. commit、push（`prices.js`、`history.js`），並照上面第 7 步重新發布網頁。
+5. 回報一行：
+   - 估算總現值、淨資產，以及和前一天紀錄的差
    - 最近一日淨值變動（金額與 %，已扣定期定額）
    - 漲跌最大的兩三個標的
    - 質押維持率：每筆借款的維持率；低於 160% 要特別提醒
@@ -115,6 +118,7 @@
 - `N` = 幣託（虛擬資產：BTC、BNB 用 `code: 'BTC-USD'` 等 Yahoo 代號加 `market: 'crypto'`，數量記在 `shares`、台幣均價記在 `avgTWD`；台幣餘額記成「台幣現金」，不做估算）
 - `O` = 玉山質押股票（不限用途借貸的擔保品股數，不在玉山台股庫存裡；成本未知時記 `costUnknown: true`、成本暫設 = 現值）
 - `P` = MaiCoin（虛擬資產，記法同 `N`：BTC 數量記 `shares`、台幣均價記 `avgTWD`，台幣餘額記成「台幣現金」）
+- `Q` = 基富通（基金平台：截圖有庫存單位數 `units`、平均申購淨值 `avgNav` 與最新淨值日 `navDate`，估算用實際單位數）
 
 ## 質押借款
 
