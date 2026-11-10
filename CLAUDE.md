@@ -39,7 +39,7 @@
    - 先執行 `python3 portfolio/build_artifact.py <scratchpad>/artifact`。
    - 再用 Artifact 工具 publish：
      - `file_path` 是 `<scratchpad>/artifact/index.html`
-     - `files` 是 `{"data.js": "<scratchpad>/artifact/data.js"}`
+     - `files` 是 `{"data.js": "<scratchpad>/artifact/data.js", "prices.js": "<scratchpad>/artifact/prices.js"}`
    - 不同的對話裡要另外帶 `url: https://claude.ai/artifact/Dwqpy3WYGDKyEPf5ScjntG`，並且先用 `action: "read"` 讀一次。
 
 ## 每日價格更新（排程每週二到週六早上執行）

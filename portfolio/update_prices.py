@@ -65,7 +65,7 @@ def fetch_fund_navs(cnyes_id):
 
 def main():
     data = load_data()
-    series = {k: dict(v) for k, v in load_prices().items()}
+    series = {k: {d: round(float(x), 4) for d, x in v} for k, v in load_prices().items()}
     added = 0
     errors = []
 
