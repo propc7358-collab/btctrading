@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>投資水位紀錄</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7;
+    --surface: #fcfcfb;
+    --surface-2: #f3f2ef;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --axis: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --accent: #2a78d6;
+    --accent-ink: #ffffff;
+    --series-value: #2a78d6;
+    --series-cost: #eb6834;
+    /* 台灣慣例：紅漲綠跌 */
+    --up: #c62f2f;
+    --down: #006300;
+    --danger: #d03b3b;
+    --focus: #2a78d6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page: #0d0d0d;
+      --surface: #1a1a19;
+      --surface-2: #232321;
+      --ink: #f0efec;
+      --ink-2: #c3c2b7;
+      --muted: #898781;
+      --grid: #2c2c2a;
+      --axis: #383835;
+      --border: rgba(255,255,255,0.10);
+      --accent: #3987e5;
+      --series-value: #3987e5;
+      --series-cost: #d95926;
+      --up: #e66767;
+      --down: #0ca30c;
+      --danger: #e66767;
+      --focus: #3987e5;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --surface-2: #232321;
+    --ink: #f0efec;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3987e5;
+    --series-value: #3987e5;
+    --series-cost: #d95926;
+    --up: #e66767;
+    --down: #0ca30c;
+    --danger: #e66767;
+    --focus: #3987e5;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--page);
+    color: var(--ink);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 24px 16px 64px; }
+  header.top { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; justify-content: space-between; margin-bottom: 20px; }
+  h1 { font-size: 22px; margin: 0; letter-spacing: .01em; }
+  .sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
+  h2 { font-size: 16px; margin: 0; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  button, .btn {
+    font: inherit; font-size: 14px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--surface); color: var(--ink);
+    padding: 7px 12px; border-radius: 8px; line-height: 1.2;
+  }
+  button:hover { background: var(--surface-2); }
+  button.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+  button.primary:hover { filter: brightness(1.06); background: var(--accent); }
+  button.ghost { background: transparent; border-color: transparent; color: var(--ink-2); padding: 4px 8px; }
+  button.ghost:hover { background: var(--surface-2); color: var(--ink); }
+  button.danger { color: var(--danger); }
+  button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; margin-bottom: 16px; }
+  .card-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .card-head .meta { color: var(--muted); font-size: 13px; }
+
+  /* Hero + KPI tiles */
+  .hero { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; align-items: stretch; }
+  .hero-main .label { color: var(--ink-2); font-size: 14px; }
+  .hero-main .value { font-size: 48px; font-weight: 700; line-height: 1.1; margin: 4px 0; letter-spacing: -.01em; }
+  .hero-main .delta { font-size: 16px; font-weight: 600; }
+  .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .tile { background: var(--surface-2); border-radius: 10px; padding: 10px 12px; }
+  .tile .label { color: var(--ink-2); font-size: 13px; }
+  .tile .value { font-size: 20px; font-weight: 650; }
+  .tile .hint { color: var(--muted); font-size: 12px; }
+  .level-bar { height: 8px; border-radius: 4px; background: var(--grid); overflow: hidden; margin-top: 6px; }
+  .level-bar > i { display: block; height: 100%; background: var(--accent); border-radius: 4px; }
+
+  .up { color: var(--up); }
+  .down { color: var(--down); }
+
+  /* Tables */
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 9px 8px; text-align: right; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+  th { color: var(--muted); font-weight: 500; font-size: 13px; }
+  th:first-child, td:first-child { text-align: left; white-space: normal; }
+  td.num, th.num { font-variant-numeric: tabular-nums; }
+  tfoot td { font-weight: 650; border-bottom: none; border-top: 1px solid var(--axis); }
+  td.actions { width: 1%; }
+  .fund-name { font-weight: 550; }
+  .tag { display: inline-block; font-size: 11px; color: var(--ink-2); background: var(--surface-2); border-radius: 999px; padding: 1px 8px; margin-left: 6px; vertical-align: 1px; }
+
+  .platform { margin-bottom: 16px; }
+  .platform:last-child { margin-bottom: 0; }
+  .platform-title { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 4px 0 6px; }
+  .platform-title strong { font-size: 15px; }
+  .platform-title .meta { color: var(--muted); font-size: 13px; }
+
+  /* Charts */
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--ink-2); margin-bottom: 8px; }
+  .legend .key { display: inline-flex; align-items: center; gap: 6px; }
+  .legend .sw-rect { width: 12px; height: 10px; border-radius: 2px; display: inline-block; }
+  .legend .sw-line { width: 16px; height: 2px; display: inline-block; border-radius: 1px; }
+  .legend .sw-tick { width: 3px; height: 12px; display: inline-block; border-radius: 1px; }
+  .chart { position: relative; width: 100%; }
+  .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .chart text { font-family: inherit; }
+  .empty { color: var(--muted); font-size: 14px; padding: 16px 0; }
+  .tooltip {
+    position: absolute; pointer-events: none; z-index: 5;
+    background: var(--surface); color: var(--ink); border: 1px solid var(--border);
+    box-shadow: 0 4px 16px rgba(0,0,0,.12); border-radius: 8px; padding: 8px 10px; font-size: 13px;
+    min-width: 150px; opacity: 0; transition: opacity .08s;
+  }
+  .tooltip.show { opacity: 1; }
+  .tooltip .tt-title { color: var(--ink-2); font-size: 12px; margin-bottom: 4px; }
+  .tooltip .tt-row { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+  .tooltip .tt-row .k { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-2); }
+  .tooltip .tt-row .k i { width: 12px; height: 2px; display: inline-block; border-radius: 1px; }
+  .tooltip .tt-row b { font-variant-numeric: tabular-nums; }
+  .bar-hit { cursor: default; }
+  .bar-hit:focus { outline: none; }
+  .bar-hit:hover .bar, .bar-hit:focus .bar { filter: brightness(1.12); }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-2 > .card { margin-bottom: 0; }
+
+  /* Dialog */
+  dialog { border: 1px solid var(--border); border-radius: 14px; padding: 0; background: var(--surface); color: var(--ink); width: min(460px, calc(100vw - 32px)); }
+  dialog::backdrop { background: rgba(0,0,0,.4); }
+  dialog form { padding: 18px; }
+  dialog h3 { margin: 0 0 12px; font-size: 17px; }
+  .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+  .field label { font-size: 13px; color: var(--ink-2); }
+  .field input, .field select {
+    font: inherit; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--axis);
+    background: var(--page); color: var(--ink); width: 100%;
+  }
+  .field .help { font-size: 12px; color: var(--muted); }
+  .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+  .check { display: flex; gap: 8px; align-items: center; font-size: 14px; margin-bottom: 12px; }
+
+  .note { color: var(--muted); font-size: 12px; margin-top: 8px; }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--ink); color: var(--page); padding: 8px 14px; border-radius: 8px; font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 20; }
+  .toast.show { opacity: 1; }
+
+  @media (max-width: 760px) {
+    .hero, .grid-2 { grid-template-columns: 1fr; }
+    .hero-main .value { font-size: 40px; }
+    .row-3 { grid-template-columns: 1fr 1fr; }
+    .hide-sm { display: none; }
+    table.holdings thead { display: none; }
+    table.holdings tr { display: grid; grid-template-columns: repeat(3, 1fr) auto; align-items: end; border-bottom: 1px solid var(--grid); padding: 8px 0; }
+    table.holdings td { border: none; padding: 2px 4px; }
+    table.holdings td:first-child { grid-column: 1 / -1; padding-bottom: 4px; }
+    table.holdings td[data-label]::before { content: attr(data-label); display: block; font-size: 11px; color: var(--muted); font-weight: 400; }
+    table.holdings tfoot tr { border-bottom: none; border-top: 1px solid var(--axis); }
+    table.holdings tfoot td { border-top: none; }
+  }
+  @media print {
+    .toolbar, .actions, button { display: none !important; }
+    .card { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>投資水位紀錄</h1>
+      <div class="sub" id="updatedAt"></div>
+    </div>
+    <div class="toolbar">
+      <button class="primary" id="btnSnapshot" type="button">記錄今日快照</button>
+      <button id="btnAdd" type="button">新增持有</button>
+      <button id="btnExport" type="button">匯出</button>
+      <button id="btnImport" type="button">匯入</button>
+      <input type="file" id="fileImport" accept="application/json,.json" hidden>
+    </div>
+  </header>
+
+  <!-- 總覽 -->
+  <section class="card hero" aria-label="總覽">
+    <div class="hero-main">
+      <div class="label">總參考現值（TWD）</div>
+      <div class="value" id="kpiValue">—</div>
+      <div class="delta" id="kpiDelta">—</div>
+      <div class="sub" id="kpiCount"></div>
+    </div>
+    <div class="tiles">
+      <div class="tile">
+        <div class="label">投入本金</div>
+        <div class="value" id="kpiCost">—</div>
+      </div>
+      <div class="tile">
+        <div class="label">未實現損益</div>
+        <div class="value" id="kpiPnl">—</div>
+      </div>
+      <div class="tile">
+        <div class="label">較上次快照</div>
+        <div class="value" id="kpiChange">—</div>
+        <div class="hint" id="kpiChangeHint"></div>
+      </div>
+      <div class="tile">
+        <div class="label">投資水位 <button class="ghost" id="btnBudget" type="button" style="font-size:12px;padding:0 4px">設定</button></div>
+        <div class="value" id="kpiLevel">—</div>
+        <div class="level-bar" aria-hidden="true"><i id="kpiLevelBar" style="width:0"></i></div>
+        <div class="hint" id="kpiLevelHint"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 持有明細 -->
+  <section class="card" aria-label="持有明細">
+    <div class="card-head">
+      <h2>持有明細</h2>
+      <div class="toolbar">
+        <button class="ghost" id="btnAddPlatform" type="button">＋ 新增平台</button>
+      </div>
+    </div>
+    <div id="platforms"></div>
+  </section>
+
+  <div class="grid-2">
+    <!-- 依基金合併 -->
+    <section class="card" aria-label="依基金合併">
+      <div class="card-head">
+        <h2>依基金合併</h2>
+        <span class="meta">跨平台同名基金合計</span>
+      </div>
+      <div class="legend">
+        <span class="key"><span class="sw-rect" style="background:var(--series-value)"></span>參考現值</span>
+        <span class="key"><span class="sw-tick" style="background:var(--series-cost)"></span>本金</span>
+      </div>
+      <div class="chart" id="fundChart"></div>
+    </section>
+
+    <!-- 平台配置 -->
+    <section class="card" aria-label="配置比例">
+      <div class="card-head">
+        <h2>配置比例</h2>
+        <span class="meta">占總現值</span>
+      </div>
+      <div id="allocTables"></div>
+    </section>
+  </div>
+
+  <!-- 走勢 -->
+  <section class="card" aria-label="水位走勢" style="margin-top:16px">
+    <div class="card-head">
+      <h2>水位走勢</h2>
+      <span class="meta" id="trendMeta"></span>
+    </div>
+    <div class="legend">
+      <span class="key"><span class="sw-line" style="background:var(--series-value)"></span>參考現值</span>
+      <span class="key"><span class="sw-line" style="background:var(--series-cost)"></span>投入本金</span>
+    </div>
+    <div class="chart" id="trendChart"></div>
+    <div class="table-wrap" style="margin-top:12px">
+      <table id="snapTable">
+        <thead>
+          <tr><th>日期</th><th class="num">參考現值</th><th class="num">投入本金</th><th class="num">損益</th><th class="num">報酬率</th><th class="num hide-sm">水位</th><th></th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="note">每次更新現值後按「記錄今日快照」，同一天重複記錄會覆蓋當天資料。</div>
+  </section>
+
+  <div class="note">資料只存在這台裝置的瀏覽器（localStorage）。換裝置或清除瀏覽資料前請先「匯出」備份 JSON。</div>
+</div>
+
+<!-- 編輯持有 -->
+<dialog id="holdingDialog">
+  <form method="dialog" id="holdingForm">
+    <h3 id="holdingTitle">新增持有</h3>
+    <div class="field">
+      <label for="fPlatform">平台</label>
+      <select id="fPlatform" required></select>
+    </div>
+    <div class="field">
+      <label for="fName">基金名稱</label>
+      <input id="fName" required placeholder="例：安聯台灣科技基金" autocomplete="off">
+    </div>
+    <div class="row-2">
+      <div class="field">
+        <label for="fCategory">類別</label>
+        <input id="fCategory" list="categoryList" placeholder="例：台股" autocomplete="off">
+        <datalist id="categoryList"></datalist>
+      </div>
+      <div class="field">
+        <label for="fNavDate">淨值日</label>
+        <input id="fNavDate" type="date">
+      </div>
+    </div>
+    <div class="row-3">
+      <div class="field">
+        <label for="fValue">參考現值</label>
+        <input id="fValue" type="number" inputmode="decimal" step="any" min="0" required>
+      </div>
+      <div class="field">
+        <label for="fCost">本金</label>
+        <input id="fCost" type="number" inputmode="decimal" step="any" min="0" required>
+      </div>
+      <div class="field">
+        <label for="fRate">報酬率 %</label>
+        <input id="fRate" type="number" inputmode="decimal" step="any">
+      </div>
+    </div>
+    <div class="field"><span class="help">只知道現值與報酬率時，填報酬率會自動反推本金。</span></div>
+    <label class="check"><input type="checkbox" id="fDca"> 定期定額扣款中</label>
+    <div class="dialog-actions">
+      <button type="button" class="danger" id="btnDeleteHolding" style="margin-right:auto">刪除</button>
+      <button type="button" id="btnCancel">取消</button>
+      <button type="submit" class="primary" value="save">儲存</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  const STORE_KEY = 'investment-level-tracker-v1';
+
+  // 初始資料：2026/11/10 兩個平台 App 截圖
+  const SEED = {
+    settings: { budget: null },
+    platforms: [
+      { id: 'pA', name: '平台 A' },
+      { id: 'pB', name: '平台 B' }
+    ],
+    holdings: [
+      { id: 'h1', platformId: 'pA', name: '施羅德台灣樂活中小基金-A類型', category: '台股', cost: 254000, value: 215051, navDate: '', dca: false },
+      { id: 'h2', platformId: 'pA', name: '安聯台灣科技基金',             category: '台股', cost: 200000, value: 166341, navDate: '', dca: false },
+      { id: 'h3', platformId: 'pA', name: '統一龍馬基金',                 category: '台股', cost: 150000, value: 125992, navDate: '', dca: false },
+      { id: 'h4', platformId: 'pB', name: '安聯台灣科技基金',             category: '台股', cost: 275000, value: 223570, navDate: '2026-11-09', dca: false },
+      { id: 'h5', platformId: 'pB', name: '復華全球物聯網科技臺幣',       category: '全球', cost: 147000, value: 100388, navDate: '2026-11-06', dca: false },
+      { id: 'h6', platformId: 'pB', name: '復華全方位基金A類型',          category: '台股', cost: 24500,  value: 21814,  navDate: '2026-11-09', dca: false }
+    ],
+    snapshots: [
+      { date: '2026-11-10', value: 853156, cost: 1050500 }
+    ],
+    updatedAt: '2026-11-10T17:32:00+08:00'
+  };
+
+  // ---------- storage ----------
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORE_KEY);
+      if (raw) {
+        const d = JSON.parse(raw);
+        if (d && Array.isArray(d.holdings) && Array.isArray(d.platforms)) return normalize(d);
+      }
+    } catch (e) { /* storage unavailable */ }
+    return normalize(JSON.parse(JSON.stringify(SEED)));
+  }
+  function normalize(d) {
+    d.settings = d.settings || { budget: null };
+    d.snapshots = Array.isArray(d.snapshots) ? d.snapshots : [];
+    d.snapshots.sort((a, b) => a.date.localeCompare(b.date));
+    return d;
+  }
+  function save() {
+    state.updatedAt = new Date().toISOString();
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { /* ignore */ }
+  }
+
+  let state = load();
+
+  // ---------- helpers ----------
+  const $ = (id) => document.getElementById(id);
+  const nf = new Intl.NumberFormat('zh-TW', { maximumFractionDigits: 0 });
+  const fmt = (n) => nf.format(Math.round(n));
+  const signed = (n) => (n > 0 ? '+' : n < 0 ? '−' : '') + nf.format(Math.abs(Math.round(n)));
+  const pct = (r, digits = 2) => (r > 0 ? '+' : r < 0 ? '−' : '') + Math.abs(r * 100).toFixed(digits) + '%';
+  const tone = (n) => (n > 0 ? 'up' : n < 0 ? 'down' : '');
+  const uid = () => 'h' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const today = () => {
+    const d = new Date();
+    const p = (x) => String(x).padStart(2, '0');
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+  };
+  const el = (tag, attrs, ...kids) => {
+    const n = document.createElement(tag);
+    if (attrs) for (const k in attrs) {
+      if (k === 'class') n.className = attrs[k];
+      else if (k === 'text') n.textContent = attrs[k];
+      else if (k.startsWith('on')) n.addEventListener(k.slice(2), attrs[k]);
+      else n.setAttribute(k, attrs[k]);
+    }
+    for (const c of kids) if (c != null) n.append(c);
+    return n;
+  };
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  const sv = (tag, attrs) => {
+    const n = document.createElementNS(SVGNS, tag);
+    if (attrs) for (const k in attrs) n.setAttribute(k, attrs[k]);
+    return n;
+  };
+  function toast(msg) {
+    const t = $('toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 1800);
+  }
+  function compactTWD(n) {
+    const a = Math.abs(n);
+    if (a >= 1e8) return (n / 1e8).toFixed(a >= 1e9 ? 0 : 1) + '億';
+    if (a >= 1e4) return (n / 1e4).toFixed(a >= 1e5 ? 0 : 1) + '萬';
+    return nf.format(n);
+  }
+  function niceStep(range, ticks) {
+    const raw = range / ticks;
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const r = raw / mag;
+    return (r <= 1 ? 1 : r <= 2 ? 2 : r <= 2.5 ? 2.5 : r <= 5 ? 5 : 10) * mag;
+  }
+
+  function totals(list) {
+    const value = list.reduce((s, h) => s + (+h.value || 0), 0);
+    const cost = list.reduce((s, h) => s + (+h.cost || 0), 0);
+    return { value, cost, pnl: value - cost, rate: cost ? (value - cost) / cost : 0 };
+  }
+
+  // ---------- render ----------
+  function render() {
+    const t = totals(state.holdings);
+    const upd = state.updatedAt ? new Date(state.updatedAt) : null;
+    $('updatedAt').textContent = upd ? '最後更新 ' + upd.toLocaleString('zh-TW', { hour12: false }) : '';
+
+    $('kpiValue').textContent = fmt(t.value);
+    const delta = $('kpiDelta');
+    delta.textContent = signed(t.pnl) + '（' + pct(t.rate) + '）';
+    delta.className = 'delta ' + tone(t.pnl);
+    $('kpiCount').textContent = state.platforms.length + ' 個平台 · ' + state.holdings.length + ' 筆持有';
+    $('kpiCost').textContent = fmt(t.cost);
+    const pnl = $('kpiPnl'); pnl.textContent = signed(t.pnl); pnl.className = 'value ' + tone(t.pnl);
+
+    // 較上次快照（不同日期中最新的一筆）
+    const prev = [...state.snapshots].reverse().find((s) => s.date !== today()) || null;
+    const ch = $('kpiChange');
+    if (prev) {
+      const diff = t.value - prev.value;
+      ch.textContent = signed(diff); ch.className = 'value ' + tone(diff);
+      $('kpiChangeHint').textContent = '對比 ' + prev.date.replace(/-/g, '/') + '（' + pct(prev.value ? diff / prev.value : 0) + '）';
+    } else {
+      ch.textContent = '—'; ch.className = 'value';
+      $('kpiChangeHint').textContent = '尚無更早的快照';
+    }
+
+    // 水位 = 投入本金 / 可投資總資金
+    const budget = +state.settings.budget || 0;
+    if (budget > 0) {
+      const lvl = t.cost / budget;
+      $('kpiLevel').textContent = (lvl * 100).toFixed(1) + '%';
+      $('kpiLevelBar').style.width = Math.min(100, lvl * 100) + '%';
+      $('kpiLevelHint').textContent = '本金 ÷ 可投資資金 ' + fmt(budget) + (lvl < 1 ? '，剩餘 ' + fmt(budget - t.cost) : '');
+    } else {
+      $('kpiLevel').textContent = '—';
+      $('kpiLevelBar').style.width = '0';
+      $('kpiLevelHint').textContent = '點「設定」輸入可投資總資金';
+    }
+
+    renderPlatforms();
+    renderFundChart();
+    renderAlloc();
+    renderTrend();
+    renderSnapTable();
+  }
+
+  function renderPlatforms() {
+    const host = $('platforms');
+    host.replaceChildren();
+    if (!state.platforms.length) {
+      host.append(el('div', { class: 'empty', text: '還沒有平台，先新增一個。' }));
+      return;
+    }
+    for (const p of state.platforms) {
+      const list = state.holdings.filter((h) => h.platformId === p.id);
+      const t = totals(list);
+      const head = el('div', { class: 'platform-title' },
+        el('strong', { text: p.name }),
+        el('span', { class: 'meta', text: '· ' + list.length + ' 檔' }),
+        el('button', { class: 'ghost', type: 'button', text: '改名', onclick: () => renamePlatform(p) }),
+        el('button', { class: 'ghost', type: 'button', text: '＋ 持有', onclick: () => openHolding(null, p.id) }),
+        list.length ? null : el('button', { class: 'ghost danger', type: 'button', text: '刪除平台', onclick: () => deletePlatform(p) })
+      );
+      const tbody = el('tbody');
+      for (const h of list) {
+        const pnl = h.value - h.cost;
+        const rate = h.cost ? pnl / h.cost : 0;
+        const nameCell = el('td', null, el('span', { class: 'fund-name', text: h.name }));
+        if (h.category) nameCell.append(el('span', { class: 'tag', text: h.category }));
+        if (h.dca) nameCell.append(el('span', { class: 'tag', text: '定期定額' }));
+        tbody.append(el('tr', null,
+          nameCell,
+          el('td', { class: 'num', 'data-label': '參考現值', text: fmt(h.value) }),
+          el('td', { class: 'num hide-sm', text: fmt(h.cost) }),
+          el('td', { class: 'num ' + tone(pnl), 'data-label': '損益', text: signed(pnl) }),
+          el('td', { class: 'num ' + tone(pnl), 'data-label': '報酬率', text: pct(rate) }),
+          el('td', { class: 'num hide-sm', text: h.navDate ? h.navDate.slice(5).replace('-', '/') : '—' }),
+          el('td', { class: 'actions' }, el('button', { class: 'ghost', type: 'button', text: '編輯', 'aria-label': '編輯 ' + h.name, onclick: () => openHolding(h) }))
+        ));
+      }
+      const tfoot = el('tfoot', null, el('tr', null,
+        el('td', { text: '小計' }),
+        el('td', { class: 'num', 'data-label': '參考現值', text: fmt(t.value) }),
+        el('td', { class: 'num hide-sm', text: fmt(t.cost) }),
+        el('td', { class: 'num ' + tone(t.pnl), 'data-label': '損益', text: signed(t.pnl) }),
+        el('td', { class: 'num ' + tone(t.pnl), 'data-label': '報酬率', text: pct(t.rate) }),
+        el('td', { class: 'hide-sm' }), el('td')
+      ));
+      const table = el('table', { class: 'holdings' },
+        el('thead', null, el('tr', null,
+          el('th', { text: '基金' }), el('th', { class: 'num', text: '參考現值' }), el('th', { class: 'num hide-sm', text: '本金' }),
+          el('th', { class: 'num', text: '損益' }), el('th', { class: 'num', text: '報酬率' }), el('th', { class: 'num hide-sm', text: '淨值日' }), el('th')
+        )),
+        tbody, list.length ? tfoot : null
+      );
+      host.append(el('div', { class: 'platform' }, head, el('div', { class: 'table-wrap' }, table)));
+    }
+  }
+
+  function aggregateByFund() {
+    const map = new Map();
+    for (const h of state.holdings) {
+      const key = h.name.trim();
+      const cur = map.get(key) || { name: key, value: 0, cost: 0, platforms: [] };
+      cur.value += +h.value || 0; cur.cost += +h.cost || 0;
+      const pn = (state.platforms.find((p) => p.id === h.platformId) || {}).name;
+      if (pn && !cur.platforms.includes(pn)) cur.platforms.push(pn);
+      map.set(key, cur);
+    }
+    return [...map.values()].sort((a, b) => b.value - a.value);
+  }
+
+  // 水平長條：現值為長條，本金為刻度線
+  function renderFundChart() {
+    const host = $('fundChart');
+    host.replaceChildren();
+    const rows = aggregateByFund();
+    if (!rows.length) { host.append(el('div', { class: 'empty', text: '沒有持有資料' })); return; }
+    const W = Math.max(300, host.clientWidth || 480);
+    const labelH = 18, barH = 14, gap = 16, rowH = labelH + barH + gap;
+    const padR = 8;
+    const H = rows.length * rowH;
+    const max = Math.max(...rows.map((r) => Math.max(r.value, r.cost))) * 1.02;
+    const x = (v) => (v / max) * (W - padR);
+    const svg = sv('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': '各基金參考現值與本金' });
+    const tip = el('div', { class: 'tooltip' });
+
+    rows.forEach((r, i) => {
+      const y0 = i * rowH;
+      const g = sv('g', { class: 'bar-hit', tabindex: '0' });
+      const label = sv('text', { x: 0, y: y0 + 13, 'font-size': 13, fill: 'var(--ink)' });
+      label.textContent = r.name + (r.platforms.length > 1 ? '（' + r.platforms.length + ' 平台）' : '');
+      const val = sv('text', { x: W - padR, y: y0 + 13, 'font-size': 12, fill: 'var(--ink-2)', 'text-anchor': 'end', style: 'font-variant-numeric:tabular-nums' });
+      val.textContent = compactTWD(r.value) + ' · ' + pct(r.cost ? (r.value - r.cost) / r.cost : 0, 1);
+      const by = y0 + labelH;
+      // 底軌
+      g.append(sv('rect', { x: 0, y: by, width: W - padR, height: barH, rx: 4, fill: 'var(--grid)', opacity: .5 }));
+      g.append(sv('rect', { class: 'bar', x: 0, y: by, width: Math.max(2, x(r.value)), height: barH, rx: 4, fill: 'var(--series-value)' }));
+      // 本金刻度（2px 表面描邊讓它從長條上浮出）
+      const cx = x(r.cost);
+      g.append(sv('rect', { x: cx - 2.5, y: by - 4, width: 5, height: barH + 8, rx: 2, fill: 'var(--surface)' }));
+      g.append(sv('rect', { x: cx - 1.5, y: by - 3, width: 3, height: barH + 6, rx: 1.5, fill: 'var(--series-cost)' }));
+      // 擴大 hit 區域
+      g.append(sv('rect', { x: 0, y: y0, width: W, height: rowH - 4, fill: 'transparent' }));
+      g.prepend(label); g.prepend(val);
+      const show = (evt) => {
+        const pnl = r.value - r.cost;
+        tip.replaceChildren(
+          el('div', { class: 'tt-title', text: r.name }),
+          ttRow('var(--series-value)', '參考現值', fmt(r.value)),
+          ttRow('var(--series-cost)', '本金', fmt(r.cost)),
+          ttRow(null, '損益', signed(pnl) + '（' + pct(r.cost ? pnl / r.cost : 0) + '）', tone(pnl)),
+          r.platforms.length ? el('div', { class: 'tt-title', style: 'margin:4px 0 0', text: r.platforms.join('、') }) : null
+        );
+        placeTip(host, tip, evt, W, by);
+      };
+      g.addEventListener('pointermove', show);
+      g.addEventListener('focus', show);
+      g.addEventListener('pointerleave', () => tip.classList.remove('show'));
+      g.addEventListener('blur', () => tip.classList.remove('show'));
+      svg.append(g);
+    });
+    host.append(svg, tip);
+  }
+
+  function ttRow(color, k, v, cls) {
+    const key = el('span', { class: 'k' });
+    if (color) { const i = el('i'); i.style.background = color; key.append(i); }
+    key.append(document.createTextNode(k));
+    return el('div', { class: 'tt-row' }, key, el('b', { class: cls || '', text: v }));
+  }
+  function placeTip(host, tip, evt, W, fallbackY) {
+    const box = host.getBoundingClientRect();
+    const scale = box.width / W;
+    let px, py;
+    if (evt && evt.clientX != null && evt.type !== 'focus') { px = evt.clientX - box.left; py = evt.clientY - box.top; }
+    else { px = box.width / 2; py = fallbackY * scale; }
+    tip.classList.add('show');
+    const tw = tip.offsetWidth, th = tip.offsetHeight;
+    let left = px + 14; if (left + tw > box.width) left = Math.max(0, px - tw - 14);
+    let top = py - th - 10; if (top < 0) top = py + 16;
+    tip.style.left = left + 'px'; tip.style.top = top + 'px';
+  }
+
+  function renderAlloc() {
+    const host = $('allocTables');
+    host.replaceChildren();
+    const t = totals(state.holdings);
+    if (!t.value) { host.append(el('div', { class: 'empty', text: '沒有持有資料' })); return; }
+    const groups = [
+      ['平台', (h) => (state.platforms.find((p) => p.id === h.platformId) || {}).name || '未分類'],
+      ['類別', (h) => h.category || '未分類']
+    ];
+    for (const [title, keyFn] of groups) {
+      const m = new Map();
+      for (const h of state.holdings) {
+        const k = keyFn(h);
+        const cur = m.get(k) || [];
+        cur.push(h); m.set(k, cur);
+      }
+      const rows = [...m.entries()].map(([k, list]) => ({ k, ...totals(list) })).sort((a, b) => b.value - a.value);
+      const tbody = el('tbody');
+      for (const r of rows) {
+        const share = r.value / t.value;
+        const bar = el('div', { class: 'level-bar', style: 'margin-top:4px;height:6px' });
+        bar.append(el('i', { style: 'width:' + (share * 100).toFixed(1) + '%' }));
+        tbody.append(el('tr', null,
+          el('td', null, el('div', { text: r.k }), bar),
+          el('td', { class: 'num', text: (share * 100).toFixed(1) + '%' }),
+          el('td', { class: 'num', text: fmt(r.value) }),
+          el('td', { class: 'num ' + tone(r.pnl), text: pct(r.rate, 1) })
+        ));
+      }
+      host.append(el('div', { class: 'table-wrap', style: 'margin-bottom:14px' }, el('table', null,
+        el('thead', null, el('tr', null,
+          el('th', { text: title }), el('th', { class: 'num', text: '占比' }), el('th', { class: 'num', text: '現值' }), el('th', { class: 'num', text: '報酬率' })
+        )), tbody)));
+    }
+  }
+
+  // 折線：快照的現值 vs 本金
+  function renderTrend() {
+    const host = $('trendChart');
+    host.replaceChildren();
+    const data = state.snapshots;
+    $('trendMeta').textContent = data.length ? data.length + ' 筆快照' : '';
+    if (!data.length) { host.append(el('div', { class: 'empty', text: '還沒有快照。按「記錄今日快照」開始累積走勢。' })); return; }
+
+    const W = Math.max(300, host.clientWidth || 800);
+    const H = W < 500 ? 220 : 260;
+    const m = { t: 12, r: 64, b: 28, l: 48 };
+    const iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const times = data.map((d) => Date.parse(d.date + 'T00:00:00'));
+    const t0 = times[0], t1 = times[times.length - 1];
+    const x = (t) => (t1 === t0 ? m.l + iw / 2 : m.l + ((t - t0) / (t1 - t0)) * iw);
+    const vals = data.flatMap((d) => [d.value, d.cost]);
+    let lo = Math.min(...vals), hi = Math.max(...vals);
+    const span = Math.max(hi - lo, hi * 0.1);
+    lo = Math.max(0, lo - span * 0.15); hi = hi + span * 0.15;
+    const step = niceStep(hi - lo, 4);
+    lo = Math.floor(lo / step) * step; hi = Math.ceil(hi / step) * step;
+    const y = (v) => m.t + ih - ((v - lo) / (hi - lo)) * ih;
+
+    const svg = sv('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': '參考現值與投入本金走勢' });
+    // grid + y ticks
+    for (let v = lo; v <= hi + 1e-6; v += step) {
+      svg.append(sv('line', { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: v === lo ? 'var(--axis)' : 'var(--grid)', 'stroke-width': 1 }));
+      const tx = sv('text', { x: m.l - 8, y: y(v) + 4, 'text-anchor': 'end', 'font-size': 11, fill: 'var(--muted)', style: 'font-variant-numeric:tabular-nums' });
+      tx.textContent = compactTWD(v); svg.append(tx);
+    }
+    // x ticks: first, last, and up to 4 in between
+    const idxs = new Set([0, data.length - 1]);
+    const n = Math.min(4, data.length - 2);
+    for (let i = 1; i <= n; i++) idxs.add(Math.round((i * (data.length - 1)) / (n + 1)));
+    for (const i of idxs) {
+      const tx = sv('text', { x: x(times[i]), y: H - 8, 'text-anchor': data.length === 1 ? 'middle' : i === 0 ? 'start' : i === data.length - 1 ? 'end' : 'middle', 'font-size': 11, fill: 'var(--muted)' });
+      tx.textContent = data[i].date.slice(5).replace('-', '/');
+      if (data[0].date.slice(0, 4) !== data[data.length - 1].date.slice(0, 4)) tx.textContent = data[i].date.slice(2).replace(/-/g, '/');
+      svg.append(tx);
+    }
+    const series = [
+      { key: 'value', name: '參考現值', color: 'var(--series-value)' },
+      { key: 'cost', name: '投入本金', color: 'var(--series-cost)' }
+    ];
+    // 現值與本金之間的差距淡色填充（只在有 2 筆以上時）
+    if (data.length > 1) {
+      let dArea = 'M' + data.map((d, i) => x(times[i]) + ',' + y(d.value)).join('L');
+      dArea += 'L' + [...data].reverse().map((d, i) => x(times[data.length - 1 - i]) + ',' + y(d.cost)).join('L') + 'Z';
+      svg.append(sv('path', { d: dArea, fill: 'var(--series-value)', opacity: .08 }));
+    }
+    for (const s of series) {
+      if (data.length > 1) {
+        const d = 'M' + data.map((p, i) => x(times[i]) + ',' + y(p[s.key])).join('L');
+        svg.append(sv('path', { d, fill: 'none', stroke: s.color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
+      }
+      const last = data[data.length - 1];
+      svg.append(sv('circle', { cx: x(times[times.length - 1]), cy: y(last[s.key]), r: 4, fill: s.color, stroke: 'var(--surface)', 'stroke-width': 2 }));
+    }
+    // 直接標示（最後一點右側）
+    const last = data[data.length - 1];
+    const ly = [y(last.value), y(last.cost)];
+    if (Math.abs(ly[0] - ly[1]) < 14) { const mid = (ly[0] + ly[1]) / 2; const up = ly[0] <= ly[1]; ly[0] = mid + (up ? -8 : 8); ly[1] = mid + (up ? 8 : -8); }
+    series.forEach((s, i) => {
+      const t = sv('text', { x: x(times[times.length - 1]) + 8, y: ly[i] + 4, 'font-size': 11, fill: 'var(--ink-2)', style: 'font-variant-numeric:tabular-nums' });
+      t.textContent = compactTWD(last[s.key]); svg.append(t);
+    });
+
+    // crosshair + tooltip
+    const cross = sv('line', { y1: m.t, y2: m.t + ih, stroke: 'var(--axis)', 'stroke-width': 1, visibility: 'hidden' });
+    const dots = series.map((s) => sv('circle', { r: 4, fill: s.color, stroke: 'var(--surface)', 'stroke-width': 2, visibility: 'hidden' }));
+    svg.append(cross, ...dots);
+    const hit = sv('rect', { x: m.l - 10, y: 0, width: iw + 20, height: H, fill: 'transparent', tabindex: '0' });
+    svg.append(hit);
+    const tip = el('div', { class: 'tooltip' });
+    let focusIdx = data.length - 1;
+    const showAt = (i, evt) => {
+      const d = data[i], cx = x(times[i]);
+      cross.setAttribute('x1', cx); cross.setAttribute('x2', cx); cross.setAttribute('visibility', 'visible');
+      series.forEach((s, k) => { dots[k].setAttribute('cx', cx); dots[k].setAttribute('cy', y(d[s.key])); dots[k].setAttribute('visibility', 'visible'); });
+      const pnl = d.value - d.cost;
+      tip.replaceChildren(
+        el('div', { class: 'tt-title', text: d.date.replace(/-/g, '/') }),
+        ttRow('var(--series-value)', '參考現值', fmt(d.value)),
+        ttRow('var(--series-cost)', '投入本金', fmt(d.cost)),
+        ttRow(null, '損益', signed(pnl) + '（' + pct(d.cost ? pnl / d.cost : 0) + '）', tone(pnl))
+      );
+      const box = host.getBoundingClientRect();
+      const scale = box.width / W;
+      placeTip(host, tip, evt && evt.type !== 'focus' && evt.type !== 'keydown' ? evt : { clientX: box.left + cx * scale, clientY: box.top + y(d.value) * scale }, W, y(d.value));
+    };
+    const nearest = (evt) => {
+      const box = svg.getBoundingClientRect();
+      const px = (evt.clientX - box.left) * (W / box.width);
+      let best = 0, bd = Infinity;
+      times.forEach((t, i) => { const dd = Math.abs(x(t) - px); if (dd < bd) { bd = dd; best = i; } });
+      return best;
+    };
+    const hide = () => { tip.classList.remove('show'); cross.setAttribute('visibility', 'hidden'); dots.forEach((d) => d.setAttribute('visibility', 'hidden')); };
+    hit.addEventListener('pointermove', (e) => { focusIdx = nearest(e); showAt(focusIdx, e); });
+    hit.addEventListener('pointerleave', hide);
+    hit.addEventListener('focus', () => showAt(focusIdx));
+    hit.addEventListener('blur', hide);
+    hit.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') { focusIdx = Math.max(0, focusIdx - 1); showAt(focusIdx, e); e.preventDefault(); }
+      if (e.key === 'ArrowRight') { focusIdx = Math.min(data.length - 1, focusIdx + 1); showAt(focusIdx, e); e.preventDefault(); }
+    });
+    host.append(svg, tip);
+    if (data.length === 1) host.append(el('div', { class: 'note', text: '目前只有一筆快照，累積兩筆以上就會畫出走勢線。' }));
+  }
+
+  function renderSnapTable() {
+    const tbody = $('snapTable').querySelector('tbody');
+    tbody.replaceChildren();
+    const budget = +state.settings.budget || 0;
+    const rows = [...state.snapshots].reverse();
+    if (!rows.length) {
+      tbody.append(el('tr', null, el('td', { colspan: 7, class: 'empty', text: '尚無快照' })));
+      return;
+    }
+    for (const s of rows) {
+      const pnl = s.value - s.cost;
+      tbody.append(el('tr', null,
+        el('td', { text: s.date.replace(/-/g, '/') }),
+        el('td', { class: 'num', text: fmt(s.value) }),
+        el('td', { class: 'num', text: fmt(s.cost) }),
+        el('td', { class: 'num ' + tone(pnl), text: signed(pnl) }),
+        el('td', { class: 'num ' + tone(pnl), text: pct(s.cost ? pnl / s.cost : 0) }),
+        el('td', { class: 'num hide-sm', text: budget ? (s.cost / budget * 100).toFixed(1) + '%' : '—' }),
+        el('td', { class: 'actions' }, el('button', { class: 'ghost danger', type: 'button', text: '刪除', onclick: () => deleteSnapshot(s.date) }))
+      ));
+    }
+  }
+
+  // ---------- actions ----------
+  function takeSnapshot() {
+    const t = totals(state.holdings);
+    const date = today();
+    const snap = {
+      date, value: Math.round(t.value), cost: Math.round(t.cost),
+      holdings: state.holdings.map((h) => ({ platformId: h.platformId, name: h.name, value: h.value, cost: h.cost }))
+    };
+    const i = state.snapshots.findIndex((s) => s.date === date);
+    if (i >= 0) state.snapshots[i] = snap; else state.snapshots.push(snap);
+    state.snapshots.sort((a, b) => a.date.localeCompare(b.date));
+    save(); render();
+    toast(i >= 0 ? '已更新今日快照' : '已記錄今日快照');
+  }
+  function deleteSnapshot(date) {
+    if (!confirm('刪除 ' + date.replace(/-/g, '/') + ' 的快照？')) return;
+    state.snapshots = state.snapshots.filter((s) => s.date !== date);
+    save(); render();
+  }
+  function renamePlatform(p) {
+    const name = prompt('平台名稱', p.name);
+    if (name == null || !name.trim()) return;
+    p.name = name.trim(); save(); render();
+  }
+  function addPlatform() {
+    const name = prompt('新平台名稱（例：某某銀行、某某基金平台）');
+    if (name == null || !name.trim()) return;
+    state.platforms.push({ id: 'p' + Date.now().toString(36), name: name.trim() });
+    save(); render();
+  }
+  function deletePlatform(p) {
+    if (!confirm('刪除平台「' + p.name + '」？')) return;
+    state.platforms = state.platforms.filter((x) => x.id !== p.id);
+    save(); render();
+  }
+  function setBudget() {
+    const cur = state.settings.budget || '';
+    const v = prompt('可投資總資金（TWD）\n水位 = 已投入本金 ÷ 可投資總資金\n留空可清除', cur);
+    if (v == null) return;
+    const n = parseFloat(String(v).replace(/[,\s]/g, ''));
+    state.settings.budget = n > 0 ? n : null;
+    save(); render();
+  }
+
+  // ---------- holding dialog ----------
+  const dlg = $('holdingDialog');
+  let editingId = null;
+  function openHolding(h, platformId) {
+    if (!state.platforms.length) { addPlatform(); if (!state.platforms.length) return; }
+    editingId = h ? h.id : null;
+    $('holdingTitle').textContent = h ? '編輯持有' : '新增持有';
+    const sel = $('fPlatform'); sel.replaceChildren();
+    for (const p of state.platforms) sel.append(el('option', { value: p.id, text: p.name }));
+    sel.value = h ? h.platformId : (platformId || state.platforms[0].id);
+    const cats = [...new Set(state.holdings.map((x) => x.category).filter(Boolean))];
+    $('categoryList').replaceChildren(...cats.map((c) => el('option', { value: c })));
+    $('fName').value = h ? h.name : '';
+    $('fCategory').value = h ? (h.category || '') : '';
+    $('fNavDate').value = h ? (h.navDate || '') : '';
+    $('fValue').value = h ? h.value : '';
+    $('fCost').value = h ? h.cost : '';
+    $('fDca').checked = !!(h && h.dca);
+    syncRate();
+    $('btnDeleteHolding').hidden = !h;
+    dlg.showModal();
+  }
+  function syncRate() {
+    const v = parseFloat($('fValue').value), c = parseFloat($('fCost').value);
+    $('fRate').value = v >= 0 && c > 0 ? (((v - c) / c) * 100).toFixed(2) : '';
+  }
+  $('fValue').addEventListener('input', syncRate);
+  $('fCost').addEventListener('input', syncRate);
+  $('fRate').addEventListener('input', () => {
+    const v = parseFloat($('fValue').value), r = parseFloat($('fRate').value);
+    if (v >= 0 && isFinite(r) && r > -100) $('fCost').value = Math.round(v / (1 + r / 100));
+  });
+  $('btnCancel').addEventListener('click', () => dlg.close());
+  $('btnDeleteHolding').addEventListener('click', () => {
+    if (!editingId) return;
+    const h = state.holdings.find((x) => x.id === editingId);
+    if (!confirm('刪除「' + (h ? h.name : '') + '」？')) return;
+    state.holdings = state.holdings.filter((x) => x.id !== editingId);
+    dlg.close(); save(); render();
+  });
+  $('holdingForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const rec = {
+      platformId: $('fPlatform').value,
+      name: $('fName').value.trim(),
+      category: $('fCategory').value.trim(),
+      navDate: $('fNavDate').value,
+      value: parseFloat($('fValue').value) || 0,
+      cost: parseFloat($('fCost').value) || 0,
+      dca: $('fDca').checked
+    };
+    if (!rec.name) return;
+    if (editingId) Object.assign(state.holdings.find((x) => x.id === editingId), rec);
+    else state.holdings.push({ id: uid(), ...rec });
+    dlg.close(); save(); render();
+    toast('已儲存，記得按「記錄今日快照」');
+  });
+
+  // ---------- import / export ----------
+  $('btnExport').addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+    const a = el('a', { href: URL.createObjectURL(blob), download: 'investment-level-' + today() + '.json' });
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
+  $('btnImport').addEventListener('click', () => $('fileImport').click());
+  $('fileImport').addEventListener('change', async (e) => {
+    const f = e.target.files[0]; e.target.value = '';
+    if (!f) return;
+    try {
+      const d = JSON.parse(await f.text());
+      if (!d || !Array.isArray(d.holdings) || !Array.isArray(d.platforms)) throw new Error('格式不符');
+      if (!confirm('匯入會覆蓋目前資料，確定？')) return;
+      state = normalize(d); save(); render(); toast('已匯入');
+    } catch (err) { alert('匯入失敗：' + err.message); }
+  });
+
+  $('btnSnapshot').addEventListener('click', takeSnapshot);
+  $('btnAdd').addEventListener('click', () => openHolding(null));
+  $('btnAddPlatform').addEventListener('click', addPlatform);
+  $('btnBudget').addEventListener('click', setBudget);
+
+  let rt;
+  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { renderFundChart(); renderTrend(); }, 120); });
+
+  render();
+})();
+</script>
+</body>
+</html>
